@@ -1,0 +1,35 @@
+name: db-tests
+
+on:
+  push:
+    paths: ["db/**", ".github/workflows/db-tests.yml"]
+  pull_request:
+    paths: ["db/**", ".github/workflows/db-tests.yml"]
+
+jobs:
+  schema:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: cowin
+          POSTGRES_PASSWORD: cowin
+          POSTGRES_DB: cowin_test
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U cowin"
+          --health-interval 5s --health-timeout 3s --health-retries 10
+    env:
+      DATABASE_URL: postgresql://cowin:cowin@localhost:5432/cowin_test
+      TEST_DATABASE_URL: postgresql://cowin:cowin@localhost:5432/cowin_test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -r db/requirements-dev.txt
+      - name: Migrations apply cleanly
+        run: ./db/scripts/apply_migrations.sh --reset
+      - name: Schema tests
+        run: pytest db/tests -v

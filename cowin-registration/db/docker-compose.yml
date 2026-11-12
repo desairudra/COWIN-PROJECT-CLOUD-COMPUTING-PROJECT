@@ -1,0 +1,31 @@
+# Local PostgreSQL for developing and testing the registration schema.
+# The full stack (service, Redis, NGINX, kind) comes in commit 5; this file
+# only gives everyone the same database to work against.
+#
+#   docker compose -f db/docker-compose.yml up -d
+#   docker compose -f db/docker-compose.yml exec db createdb -U cowin cowin_test
+#
+# On first start, the official image runs every *.sql file in
+# /docker-entrypoint-initdb.d in name order, i.e. our migrations 001 -> 004.
+# To re-run them: docker compose -f db/docker-compose.yml down -v && ... up -d
+services:
+  db:
+    image: postgres:16
+    container_name: cowin-db
+    environment:
+      POSTGRES_USER: cowin
+      POSTGRES_PASSWORD: cowin          # local development only
+      POSTGRES_DB: cowin
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./migrations:/docker-entrypoint-initdb.d:ro
+      - cowin-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U cowin -d cowin"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  cowin-db-data:

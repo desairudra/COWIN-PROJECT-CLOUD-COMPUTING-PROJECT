@@ -1,0 +1,15 @@
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+venv/
+.env
+*.log
+.DS_Store
+.idea/
+.vscode/
+
+# AWS: per-account IDs written by the scripts, and never keys
+infra/aws/.state/
+*.pem
+.aws/

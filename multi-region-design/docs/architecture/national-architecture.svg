@@ -1,0 +1,147 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 1040" width="1280" height="1040" font-family="Segoe UI, Helvetica, Arial, sans-serif" role="img" aria-label="National-scale multi-region architecture for the registration module">
+<defs>
+<marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#7b8c91"/></marker>
+<marker id="b" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#1f5fa8"/></marker>
+<marker id="r" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#b42318"/></marker>
+<marker id="t" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#0b6e5f"/></marker>
+</defs>
+<rect width="1280" height="1040" fill="#ffffff"/>
+<text x="40" y="38" font-size="20" font-weight="700" fill="#17242b" text-anchor="start">Registration module: national-scale design across Mumbai and Hyderabad</text>
+<text x="40" y="62" font-size="13" font-weight="400" fill="#52646b" text-anchor="start">Both regions serve users. Writes go to the shard primaries in Mumbai; Hyderabad holds replicas and takes over if Mumbai fails.</text>
+<rect x="490" y="84" width="300" height="52" rx="8" fill="#fff" stroke="#7b8c91" stroke-width="1.25"/>
+<text x="640.0" y="106.0" font-size="13.5" font-weight="600" fill="#17242b" text-anchor="middle">Citizens, vaccinators, partner apps</text>
+<text x="640.0" y="123.0" font-size="11.5" font-weight="400" fill="#52646b" text-anchor="middle">browsers, mobile apps, open APIs</text>
+<rect x="390" y="168" width="500" height="70" rx="8" fill="#e6eef8" stroke="#1f5fa8" stroke-width="1.6"/>
+<text x="640.0" y="191.0" font-size="13.5" font-weight="600" fill="#17242b" text-anchor="middle">Amazon Route 53 (DNS)</text>
+<text x="640.0" y="208.0" font-size="11.5" font-weight="400" fill="#52646b" text-anchor="middle">latency-based routing: each user goes to the nearer healthy region</text>
+<text x="640.0" y="224.0" font-size="11.5" font-weight="400" fill="#52646b" text-anchor="middle">health checks on both regions; failed region is taken out of DNS</text>
+<path d="M640 136V166" fill="none" stroke="#7b8c91" stroke-width="1.4" marker-end="url(#a)"/>
+<rect x="30" y="270" width="590" height="734" rx="12" fill="#f5f8f7" stroke="#7b8c91" stroke-width="1.2"/>
+<text x="48" y="296" font-size="16" font-weight="700" fill="#17242b" text-anchor="start">Region ap-south-1, Mumbai</text>
+<text x="48" y="316" font-size="12" font-weight="400" fill="#52646b" text-anchor="start">3 Availability Zones  (primary for writes)</text>
+<rect x="125" y="334" width="400" height="50" rx="8" fill="#fbf0d9" stroke="#8a5a00" stroke-width="1.25"/>
+<text x="325.0" y="355.0" font-size="13.5" font-weight="600" fill="#17242b" text-anchor="middle">AWS WAF</text>
+<text x="325.0" y="372.0" font-size="11.5" font-weight="400" fill="#52646b" text-anchor="middle">rate-based rule per client IP, blocks bot floods at the edge</text>
+<path d="M325.0 384V404" fill="none" stroke="#7b8c91" stroke-width="1.4" marker-end="url(#a)"/>
+<rect x="125" y="406" width="400" height="54" rx="8" fill="#e6eef8" stroke="#1f5fa8" stroke-width="1.6"/>
+<text x="325.0" y="429.0" font-size="13.5" font-weight="600" fill="#17242b" text-anchor="middle">Application Load Balancer</text>
+<text x="325.0" y="446.0" font-size="11.5" font-weight="400" fill="#52646b" text-anchor="middle">spans all 3 AZs, health checks every 5 s</text>
+<rect x="48" y="486" width="176" height="132" rx="8" fill="#fff" stroke="#7b8c91" stroke-width="1" stroke-dasharray="5 4"/>
+<text x="136.0" y="608" font-size="12" font-weight="600" fill="#52646b" text-anchor="middle">ap-south-1a</text>
+<rect x="60" y="496" width="152" height="92" rx="8" fill="#fff" stroke="#7b8c91" stroke-width="1.25"/>
+<text x="136.0" y="522.0" font-size="13.5" font-weight="600" fill="#17242b" text-anchor="middle">App servers</text>
+<text x="136.0" y="539.0" font-size="11.5" font-weight="400" fill="#52646b" text-anchor="middle">registration + lookup</text>
+<text x="136.0" y="555.0" font-size="11.5" font-weight="400" fill="#52646b" text-anchor="middle">stateless, in an</text>
+<text x="136.0" y="571.0" font-size="11.5" font-weight="400" fill="#52646b" text-anchor="middle">Auto Scaling group</text>
+<path d="M325.0 460V472H136.0V494" fill="none" stroke="#7b8c91" stroke-width="1.4" marker-end="url(#a)"/>
+<rect x="235" y="486" width="176" height="132" rx="8" fill="#fff" stroke="#7b8c91" stroke-width="1" stroke-dasharray="5 4"/>
+<text x="323.0" y="608" font-size="12" font-weight="600" fill="#52646b" text-anchor="middle">ap-south-1b</text>
+<rect x="247" y="496" width="152" height="92" rx="8" fill="#fff" stroke="#7b8c91" stroke-width="1.25"/>
+<text x="323.0" y="522.0" font-size="13.5" font-weight="600" fill="#17242b" text-anchor="middle">App servers</text>
+<text x="323.0" y="539.0" font-size="11.5" font-weight="400" fill="#52646b" text-anchor="middle">registration + lookup</text>
+<text x="323.0" y="555.0" font-size="11.5" font-weight="400" fill="#52646b" text-anchor="middle">stateless, in an</text>
+<text x="323.0" y="571.0" font-size="11.5" font-weight="400" fill="#52646b" text-anchor="middle">Auto Scaling group</text>
+<path d="M325.0 460V472H323.0V494" fill="none" stroke="#7b8c91" stroke-width="1.4" marker-end="url(#a)"/>
+<rect x="422" y="486" width="176" height="132" rx="8" fill="#fff" stroke="#7b8c91" stroke-width="1" stroke-dasharray="5 4"/>
+<text x="510.0" y="608" font-size="12" font-weight="600" fill="#52646b" text-anchor="middle">ap-south-1c</text>
+<rect x="434" y="496" width="152" height="92" rx="8" fill="#fff" stroke="#7b8c91" stroke-width="1.25"/>
+<text x="510.0" y="522.0" font-size="13.5" font-weight="600" fill="#17242b" text-anchor="middle">App servers</text>
+<text x="510.0" y="539.0" font-size="11.5" font-weight="400" fill="#52646b" text-anchor="middle">registration + lookup</text>
+<text x="510.0" y="555.0" font-size="11.5" font-weight="400" fill="#52646b" text-anchor="middle">stateless, in an</text>
+<text x="510.0" y="571.0" font-size="11.5" font-weight="400" fill="#52646b" text-anchor="middle">Auto Scaling group</text>
+<path d="M325.0 460V472H510.0V494" fill="none" stroke="#7b8c91" stroke-width="1.4" marker-end="url(#a)"/>
+<text x="48" y="640" font-size="11.5" font-weight="400" fill="#52646b" text-anchor="start">Token bucket in the app: 100 calls per 5 min per client</text>
+<rect x="48" y="654" width="270" height="66" rx="8" fill="#e3f2ee" stroke="#0b6e5f" stroke-width="1.25"/>
+<text x="183.0" y="675.0" font-size="13.5" font-weight="600" fill="#17242b" text-anchor="middle">ElastiCache (Redis)</text>
+<text x="183.0" y="692.0" font-size="11.5" font-weight="400" fill="#52646b" text-anchor="middle">OTPs with TTL, rate-limit counters</text>
+<text x="183.0" y="708.0" font-size="11.5" font-weight="400" fill="#52646b" text-anchor="middle">one per region</text>
+<rect x="332" y="654" width="270" height="66" rx="8" fill="#e3f2ee" stroke="#0b6e5f" stroke-width="1.25"/>
+<text x="467.0" y="675.0" font-size="13.5" font-weight="600" fill="#17242b" text-anchor="middle">SQS queue + SNS SMS</text>
+<text x="467.0" y="692.0" font-size="11.5" font-weight="400" fill="#52646b" text-anchor="middle">OTP texts sent off the request path</text>
+<text x="467.0" y="708.0" font-size="11.5" font-weight="400" fill="#52646b" text-anchor="middle">a slow SMS never blocks sign-up</text>
+<rect x="660" y="270" width="590" height="734" rx="12" fill="#f5f8f7" stroke="#7b8c91" stroke-width="1.2"/>
+<text x="678" y="296" font-size="16" font-weight="700" fill="#17242b" text-anchor="start">Region ap-south-2, Hyderabad</text>
+<text x="678" y="316" font-size="12" font-weight="400" fill="#52646b" text-anchor="start">3 Availability Zones  (replicas, standby for writes)</text>
+<rect x="755" y="334" width="400" height="50" rx="8" fill="#fbf0d9" stroke="#8a5a00" stroke-width="1.25"/>
+<text x="955.0" y="355.0" font-size="13.5" font-weight="600" fill="#17242b" text-anchor="middle">AWS WAF</text>
+<text x="955.0" y="372.0" font-size="11.5" font-weight="400" fill="#52646b" text-anchor="middle">rate-based rule per client IP, blocks bot floods at the edge</text>
+<path d="M955.0 384V404" fill="none" stroke="#7b8c91" stroke-width="1.4" marker-end="url(#a)"/>
+<rect x="755" y="406" width="400" height="54" rx="8" fill="#e6eef8" stroke="#1f5fa8" stroke-width="1.6"/>
+<text x="955.0" y="429.0" font-size="13.5" font-weight="600" fill="#17242b" text-anchor="middle">Application Load Balancer</text>
+<text x="955.0" y="446.0" font-size="11.5" font-weight="400" fill="#52646b" text-anchor="middle">spans all 3 AZs, health checks every 5 s</text>
+<rect x="678" y="486" width="176" height="132" rx="8" fill="#fff" stroke="#7b8c91" stroke-width="1" stroke-dasharray="5 4"/>
+<text x="766.0" y="608" font-size="12" font-weight="600" fill="#52646b" text-anchor="middle">ap-south-2a</text>
+<rect x="690" y="496" width="152" height="92" rx="8" fill="#fff" stroke="#7b8c91" stroke-width="1.25"/>
+<text x="766.0" y="522.0" font-size="13.5" font-weight="600" fill="#17242b" text-anchor="middle">App servers</text>
+<text x="766.0" y="539.0" font-size="11.5" font-weight="400" fill="#52646b" text-anchor="middle">registration + lookup</text>
+<text x="766.0" y="555.0" font-size="11.5" font-weight="400" fill="#52646b" text-anchor="middle">stateless, in an</text>
+<text x="766.0" y="571.0" font-size="11.5" font-weight="400" fill="#52646b" text-anchor="middle">Auto Scaling group</text>
+<path d="M955.0 460V472H766.0V494" fill="none" stroke="#7b8c91" stroke-width="1.4" marker-end="url(#a)"/>
+<rect x="865" y="486" width="176" height="132" rx="8" fill="#fff" stroke="#7b8c91" stroke-width="1" stroke-dasharray="5 4"/>
+<text x="953.0" y="608" font-size="12" font-weight="600" fill="#52646b" text-anchor="middle">ap-south-2b</text>
+<rect x="877" y="496" width="152" height="92" rx="8" fill="#fff" stroke="#7b8c91" stroke-width="1.25"/>
+<text x="953.0" y="522.0" font-size="13.5" font-weight="600" fill="#17242b" text-anchor="middle">App servers</text>
+<text x="953.0" y="539.0" font-size="11.5" font-weight="400" fill="#52646b" text-anchor="middle">registration + lookup</text>
+<text x="953.0" y="555.0" font-size="11.5" font-weight="400" fill="#52646b" text-anchor="middle">stateless, in an</text>
+<text x="953.0" y="571.0" font-size="11.5" font-weight="400" fill="#52646b" text-anchor="middle">Auto Scaling group</text>
+<path d="M955.0 460V472H953.0V494" fill="none" stroke="#7b8c91" stroke-width="1.4" marker-end="url(#a)"/>
+<rect x="1052" y="486" width="176" height="132" rx="8" fill="#fff" stroke="#7b8c91" stroke-width="1" stroke-dasharray="5 4"/>
+<text x="1140.0" y="608" font-size="12" font-weight="600" fill="#52646b" text-anchor="middle">ap-south-2c</text>
+<rect x="1064" y="496" width="152" height="92" rx="8" fill="#fff" stroke="#7b8c91" stroke-width="1.25"/>
+<text x="1140.0" y="522.0" font-size="13.5" font-weight="600" fill="#17242b" text-anchor="middle">App servers</text>
+<text x="1140.0" y="539.0" font-size="11.5" font-weight="400" fill="#52646b" text-anchor="middle">registration + lookup</text>
+<text x="1140.0" y="555.0" font-size="11.5" font-weight="400" fill="#52646b" text-anchor="middle">stateless, in an</text>
+<text x="1140.0" y="571.0" font-size="11.5" font-weight="400" fill="#52646b" text-anchor="middle">Auto Scaling group</text>
+<path d="M955.0 460V472H1140.0V494" fill="none" stroke="#7b8c91" stroke-width="1.4" marker-end="url(#a)"/>
+<text x="678" y="640" font-size="11.5" font-weight="400" fill="#52646b" text-anchor="start">Token bucket in the app: 100 calls per 5 min per client</text>
+<rect x="678" y="654" width="270" height="66" rx="8" fill="#e3f2ee" stroke="#0b6e5f" stroke-width="1.25"/>
+<text x="813.0" y="675.0" font-size="13.5" font-weight="600" fill="#17242b" text-anchor="middle">ElastiCache (Redis)</text>
+<text x="813.0" y="692.0" font-size="11.5" font-weight="400" fill="#52646b" text-anchor="middle">OTPs with TTL, rate-limit counters</text>
+<text x="813.0" y="708.0" font-size="11.5" font-weight="400" fill="#52646b" text-anchor="middle">one per region</text>
+<rect x="962" y="654" width="270" height="66" rx="8" fill="#e3f2ee" stroke="#0b6e5f" stroke-width="1.25"/>
+<text x="1097.0" y="675.0" font-size="13.5" font-weight="600" fill="#17242b" text-anchor="middle">SQS queue + SNS SMS</text>
+<text x="1097.0" y="692.0" font-size="11.5" font-weight="400" fill="#52646b" text-anchor="middle">OTP texts sent off the request path</text>
+<text x="1097.0" y="708.0" font-size="11.5" font-weight="400" fill="#52646b" text-anchor="middle">a slow SMS never blocks sign-up</text>
+<path d="M470 238V255H450V332" fill="none" stroke="#1f5fa8" stroke-width="1.6" marker-end="url(#b)"/>
+<path d="M810 238V255H1080V332" fill="none" stroke="#1f5fa8" stroke-width="1.6" marker-end="url(#b)"/>
+<rect x="48" y="762" width="554" height="222" rx="8" fill="#fff" stroke="#1f5fa8" stroke-width="1.4"/>
+<text x="64" y="786" font-size="14" font-weight="700" fill="#17242b" text-anchor="start">RDS PostgreSQL shards, routed by mobile number</text>
+<text x="64" y="804" font-size="11.5" font-weight="400" fill="#52646b" text-anchor="start">each shard: primary + synchronous standby in another AZ (Multi-AZ)</text>
+<rect x="678" y="762" width="554" height="222" rx="8" fill="#fff" stroke="#7b8c91" stroke-width="1.4"/>
+<text x="694" y="786" font-size="14" font-weight="700" fill="#17242b" text-anchor="start">Cross-region read replicas, one per shard</text>
+<text x="694" y="804" font-size="11.5" font-weight="400" fill="#52646b" text-anchor="start">kept up to date asynchronously; promoted to primaries if Mumbai fails</text>
+<rect x="64" y="820" width="166" height="62" rx="8" fill="#e6eef8" stroke="#1f5fa8" stroke-width="1.25"/>
+<text x="147.0" y="847.0" font-size="13.5" font-weight="600" fill="#17242b" text-anchor="middle">Shard 1 primary</text>
+<text x="147.0" y="864.0" font-size="11.5" font-weight="400" fill="#52646b" text-anchor="middle">+ standby in 2nd AZ</text>
+<rect x="694" y="820" width="166" height="62" rx="8" fill="#fff" stroke="#7b8c91" stroke-width="1.25"/>
+<text x="777.0" y="847.0" font-size="13.5" font-weight="600" fill="#17242b" text-anchor="middle">Shard 1 replica</text>
+<text x="777.0" y="864.0" font-size="11.5" font-weight="400" fill="#52646b" text-anchor="middle">read-only until promoted</text>
+<rect x="242" y="820" width="166" height="62" rx="8" fill="#e6eef8" stroke="#1f5fa8" stroke-width="1.25"/>
+<text x="325.0" y="847.0" font-size="13.5" font-weight="600" fill="#17242b" text-anchor="middle">Shard 2 primary</text>
+<text x="325.0" y="864.0" font-size="11.5" font-weight="400" fill="#52646b" text-anchor="middle">+ standby in 2nd AZ</text>
+<rect x="872" y="820" width="166" height="62" rx="8" fill="#fff" stroke="#7b8c91" stroke-width="1.25"/>
+<text x="955.0" y="847.0" font-size="13.5" font-weight="600" fill="#17242b" text-anchor="middle">Shard 2 replica</text>
+<text x="955.0" y="864.0" font-size="11.5" font-weight="400" fill="#52646b" text-anchor="middle">read-only until promoted</text>
+<rect x="420" y="820" width="166" height="62" rx="8" fill="#e6eef8" stroke="#1f5fa8" stroke-width="1.25"/>
+<text x="503.0" y="847.0" font-size="13.5" font-weight="600" fill="#17242b" text-anchor="middle">Shard N primary</text>
+<text x="503.0" y="864.0" font-size="11.5" font-weight="400" fill="#52646b" text-anchor="middle">+ standby in 2nd AZ</text>
+<rect x="1050" y="820" width="166" height="62" rx="8" fill="#fff" stroke="#7b8c91" stroke-width="1.25"/>
+<text x="1133.0" y="847.0" font-size="13.5" font-weight="600" fill="#17242b" text-anchor="middle">Shard N replica</text>
+<text x="1133.0" y="864.0" font-size="11.5" font-weight="400" fill="#52646b" text-anchor="middle">read-only until promoted</text>
+<rect x="64" y="898" width="522" height="70" rx="8" fill="#e6eef8" stroke="#1f5fa8" stroke-width="1.25"/>
+<text x="325.0" y="921.0" font-size="13.5" font-weight="600" fill="#17242b" text-anchor="middle">Photo ID registry (global uniqueness)</text>
+<text x="325.0" y="938.0" font-size="11.5" font-weight="400" fill="#52646b" text-anchor="middle">routed by a hash of the photo ID, not the mobile number,</text>
+<text x="325.0" y="954.0" font-size="11.5" font-weight="400" fill="#52646b" text-anchor="middle">so one ID can never be claimed on two shards</text>
+<rect x="694" y="898" width="522" height="70" rx="8" fill="#fff" stroke="#7b8c91" stroke-width="1.25"/>
+<text x="955.0" y="929.0" font-size="13.5" font-weight="600" fill="#17242b" text-anchor="middle">Photo ID registry replica</text>
+<text x="955.0" y="946.0" font-size="11.5" font-weight="400" fill="#52646b" text-anchor="middle">read-only until promoted</text>
+<path d="M325.0 720V760" fill="none" stroke="#7b8c91" stroke-width="1.4" marker-end="url(#a)"/>
+<path d="M955.0 720V760" fill="none" stroke="#7b8c91" stroke-width="1.4" marker-end="url(#a)"/>
+<text x="963.0" y="750" font-size="11.5" font-weight="400" fill="#52646b" text-anchor="start">reads</text>
+<path d="M602 850H678" fill="none" stroke="#0b6e5f" stroke-width="1.8" marker-end="url(#t)"/>
+<text x="640.0" y="842" font-size="11.5" font-weight="600" fill="#0b6e5f" text-anchor="middle">async</text>
+<text x="640.0" y="872" font-size="11.5" font-weight="600" fill="#0b6e5f" text-anchor="middle">replication</text>
+<path d="M720 720V744H580V760" fill="none" stroke="#b42318" stroke-width="1.5" stroke-dasharray="6 4" marker-end="url(#r)"/>
+<text x="732" y="738" font-size="11.5" font-weight="600" fill="#b42318" text-anchor="start">app writes go to Mumbai primaries</text>
+<text x="40" y="1028" font-size="11.5" font-weight="400" fill="#52646b" text-anchor="start">Blue: request path and Mumbai primaries.  Green: replication and async messaging.  Red dashed: Hyderabad's writes cross to Mumbai while Mumbai is healthy.</text>
+</svg>

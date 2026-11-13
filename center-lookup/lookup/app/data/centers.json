@@ -1,0 +1,315 @@
+{
+  "_note": "Made-up centres for the IT457 course project. Names are fictional; areas and PIN codes are real places, used only for filtering.",
+  "centers": [
+    {
+      "id": "MUM-001",
+      "name": "Andheri West Community Vaccination Centre",
+      "area": "Andheri West",
+      "district": "Mumbai Suburban",
+      "city": "Mumbai",
+      "state": "Maharashtra",
+      "pincode": "400058",
+      "center_type": "GOVERNMENT",
+      "vaccines": [
+        "COVISHIELD",
+        "COVAXIN"
+      ],
+      "hours": "09:00-17:00",
+      "free": true
+    },
+    {
+      "id": "MUM-002",
+      "name": "Bandra West Municipal Health Post",
+      "area": "Bandra West",
+      "district": "Mumbai Suburban",
+      "city": "Mumbai",
+      "state": "Maharashtra",
+      "pincode": "400050",
+      "center_type": "GOVERNMENT",
+      "vaccines": [
+        "COVISHIELD"
+      ],
+      "hours": "09:00-17:00",
+      "free": true
+    },
+    {
+      "id": "MUM-003",
+      "name": "Dadar Civic Vaccination Hall",
+      "area": "Dadar",
+      "district": "Mumbai City",
+      "city": "Mumbai",
+      "state": "Maharashtra",
+      "pincode": "400014",
+      "center_type": "GOVERNMENT",
+      "vaccines": [
+        "COVISHIELD",
+        "COVAXIN"
+      ],
+      "hours": "09:00-17:00",
+      "free": true
+    },
+    {
+      "id": "MUM-004",
+      "name": "Colaba Seaside Clinic",
+      "area": "Colaba",
+      "district": "Mumbai City",
+      "city": "Mumbai",
+      "state": "Maharashtra",
+      "pincode": "400005",
+      "center_type": "PRIVATE",
+      "vaccines": [
+        "COVISHIELD"
+      ],
+      "hours": "10:00-18:00",
+      "free": false
+    },
+    {
+      "id": "MUM-005",
+      "name": "Borivali West Health Centre",
+      "area": "Borivali West",
+      "district": "Mumbai Suburban",
+      "city": "Mumbai",
+      "state": "Maharashtra",
+      "pincode": "400092",
+      "center_type": "GOVERNMENT",
+      "vaccines": [
+        "COVAXIN"
+      ],
+      "hours": "09:00-17:00",
+      "free": true
+    },
+    {
+      "id": "MUM-006",
+      "name": "Kurla Family Hospital",
+      "area": "Kurla",
+      "district": "Mumbai Suburban",
+      "city": "Mumbai",
+      "state": "Maharashtra",
+      "pincode": "400070",
+      "center_type": "PRIVATE",
+      "vaccines": [
+        "COVISHIELD",
+        "SPUTNIK V"
+      ],
+      "hours": "10:00-18:00",
+      "free": false
+    },
+    {
+      "id": "MUM-007",
+      "name": "Powai Lakeside Medical Centre",
+      "area": "Powai",
+      "district": "Mumbai Suburban",
+      "city": "Mumbai",
+      "state": "Maharashtra",
+      "pincode": "400076",
+      "center_type": "PRIVATE",
+      "vaccines": [
+        "COVISHIELD",
+        "COVAXIN"
+      ],
+      "hours": "10:00-18:00",
+      "free": false
+    },
+    {
+      "id": "MUM-008",
+      "name": "Chembur Ward Vaccination Centre",
+      "area": "Chembur",
+      "district": "Mumbai Suburban",
+      "city": "Mumbai",
+      "state": "Maharashtra",
+      "pincode": "400071",
+      "center_type": "GOVERNMENT",
+      "vaccines": [
+        "COVISHIELD"
+      ],
+      "hours": "09:00-17:00",
+      "free": true
+    },
+    {
+      "id": "MUM-009",
+      "name": "Malad West Primary Health Centre",
+      "area": "Malad West",
+      "district": "Mumbai Suburban",
+      "city": "Mumbai",
+      "state": "Maharashtra",
+      "pincode": "400064",
+      "center_type": "GOVERNMENT",
+      "vaccines": [
+        "COVISHIELD",
+        "COVAXIN"
+      ],
+      "hours": "09:00-17:00",
+      "free": true
+    },
+    {
+      "id": "MUM-010",
+      "name": "Ghatkopar East Care Hospital",
+      "area": "Ghatkopar East",
+      "district": "Mumbai Suburban",
+      "city": "Mumbai",
+      "state": "Maharashtra",
+      "pincode": "400077",
+      "center_type": "PRIVATE",
+      "vaccines": [
+        "COVAXIN"
+      ],
+      "hours": "10:00-18:00",
+      "free": false
+    },
+    {
+      "id": "HYD-001",
+      "name": "Banjara Hills Community Health Centre",
+      "area": "Banjara Hills",
+      "district": "Hyderabad",
+      "city": "Hyderabad",
+      "state": "Telangana",
+      "pincode": "500034",
+      "center_type": "GOVERNMENT",
+      "vaccines": [
+        "COVISHIELD",
+        "COVAXIN"
+      ],
+      "hours": "09:00-17:00",
+      "free": true
+    },
+    {
+      "id": "HYD-002",
+      "name": "Gachibowli Tech Park Clinic",
+      "area": "Gachibowli",
+      "district": "Rangareddy",
+      "city": "Hyderabad",
+      "state": "Telangana",
+      "pincode": "500032",
+      "center_type": "PRIVATE",
+      "vaccines": [
+        "COVISHIELD"
+      ],
+      "hours": "10:00-18:00",
+      "free": false
+    },
+    {
+      "id": "HYD-003",
+      "name": "Secunderabad Cantonment Health Post",
+      "area": "Secunderabad",
+      "district": "Hyderabad",
+      "city": "Hyderabad",
+      "state": "Telangana",
+      "pincode": "500003",
+      "center_type": "GOVERNMENT",
+      "vaccines": [
+        "COVISHIELD",
+        "COVAXIN"
+      ],
+      "hours": "09:00-17:00",
+      "free": true
+    },
+    {
+      "id": "HYD-004",
+      "name": "Kukatpally Housing Board Vaccination Centre",
+      "area": "Kukatpally",
+      "district": "Medchal-Malkajgiri",
+      "city": "Hyderabad",
+      "state": "Telangana",
+      "pincode": "500072",
+      "center_type": "GOVERNMENT",
+      "vaccines": [
+        "COVAXIN"
+      ],
+      "hours": "09:00-17:00",
+      "free": true
+    },
+    {
+      "id": "HYD-005",
+      "name": "Ameerpet Metro Medical Centre",
+      "area": "Ameerpet",
+      "district": "Hyderabad",
+      "city": "Hyderabad",
+      "state": "Telangana",
+      "pincode": "500016",
+      "center_type": "PRIVATE",
+      "vaccines": [
+        "COVISHIELD",
+        "SPUTNIK V"
+      ],
+      "hours": "10:00-18:00",
+      "free": false
+    },
+    {
+      "id": "HYD-006",
+      "name": "Madhapur Primary Health Centre",
+      "area": "Madhapur",
+      "district": "Rangareddy",
+      "city": "Hyderabad",
+      "state": "Telangana",
+      "pincode": "500081",
+      "center_type": "GOVERNMENT",
+      "vaccines": [
+        "COVISHIELD"
+      ],
+      "hours": "09:00-17:00",
+      "free": true
+    },
+    {
+      "id": "HYD-007",
+      "name": "Charminar Urban Health Centre",
+      "area": "Charminar",
+      "district": "Hyderabad",
+      "city": "Hyderabad",
+      "state": "Telangana",
+      "pincode": "500002",
+      "center_type": "GOVERNMENT",
+      "vaccines": [
+        "COVISHIELD",
+        "COVAXIN"
+      ],
+      "hours": "09:00-17:00",
+      "free": true
+    },
+    {
+      "id": "HYD-008",
+      "name": "Dilsukhnagar Family Clinic",
+      "area": "Dilsukhnagar",
+      "district": "Hyderabad",
+      "city": "Hyderabad",
+      "state": "Telangana",
+      "pincode": "500060",
+      "center_type": "PRIVATE",
+      "vaccines": [
+        "COVAXIN"
+      ],
+      "hours": "10:00-18:00",
+      "free": false
+    },
+    {
+      "id": "HYD-009",
+      "name": "Mehdipatnam Civic Vaccination Hall",
+      "area": "Mehdipatnam",
+      "district": "Hyderabad",
+      "city": "Hyderabad",
+      "state": "Telangana",
+      "pincode": "500028",
+      "center_type": "GOVERNMENT",
+      "vaccines": [
+        "COVISHIELD"
+      ],
+      "hours": "09:00-17:00",
+      "free": true
+    },
+    {
+      "id": "HYD-010",
+      "name": "LB Nagar Community Hospital",
+      "area": "LB Nagar",
+      "district": "Rangareddy",
+      "city": "Hyderabad",
+      "state": "Telangana",
+      "pincode": "500074",
+      "center_type": "PRIVATE",
+      "vaccines": [
+        "COVISHIELD",
+        "COVAXIN"
+      ],
+      "hours": "10:00-18:00",
+      "free": false
+    }
+  ]
+}

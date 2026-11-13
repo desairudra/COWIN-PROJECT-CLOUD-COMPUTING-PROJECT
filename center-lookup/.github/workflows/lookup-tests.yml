@@ -1,0 +1,30 @@
+name: lookup-tests
+
+on:
+  push:
+    paths: ["lookup/**", ".github/workflows/lookup-tests.yml"]
+  pull_request:
+    paths: ["lookup/**", ".github/workflows/lookup-tests.yml"]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        # 3.9 = the default python3 on Amazon Linux 2023, where commit 5 deploys it
+        python-version: ["3.9", "3.12"]
+    defaults:
+      run:
+        working-directory: lookup
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - run: pip install -r requirements-dev.txt
+      - run: pytest -v
+      - name: Smoke test a running server
+        run: |
+          DISABLE_IMDS=1 uvicorn app.main:app --port 8000 &
+          sleep 3
+          ./scripts/smoke_test.sh http://localhost:8000

@@ -1,0 +1,24 @@
+Server check for cowin-it457 in ap-south-1 (2026-11-13T09:53:56Z)
+  PASS  server-a (i-03fecfd9adccc21ca) is running
+  PASS  server-a is in ap-south-1a
+  PASS  server-a is in subnet A
+  PASS  server-a uses only the app SG
+  PASS  server-a requires IMDSv2
+  PASS  server-b (i-0a54b28cc8253c73a) is running
+  PASS  server-b is in ap-south-1b
+  PASS  server-b is in subnet B
+  PASS  server-b uses only the app SG
+  PASS  server-b requires IMDSv2
+  PASS  the two servers are in different AZs
+
+HTTP checks (need ./infra/aws/allow_my_ip.sh add):
+  PASS  server-a /health answers
+  PASS  server-a reports its own zone (ap-south-1a)
+  PASS  server-a reports its own instance ID
+  PASS  server-a serves all 20 centres
+  PASS  server-b /health answers
+  PASS  server-b reports its own zone (ap-south-1b)
+  PASS  server-b reports its own instance ID
+  PASS  server-b serves all 20 centres
+
+All checks passed.

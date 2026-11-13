@@ -1,0 +1,16 @@
+Network check for cowin-it457 in ap-south-1 (2026-11-13T09:53:35Z)
+  PASS  VPC exists with 10.0.0.0/16
+  PASS  Subnet A is in ap-south-1a
+  PASS  Subnet B is in ap-south-1b
+  PASS  Subnets are in different AZs
+  PASS  Subnet A gives public IPs
+  PASS  Subnet B gives public IPs
+  PASS  Internet gateway attached to the VPC
+  PASS  Default route goes to the internet gateway
+  PASS  Route table associated with subnet-07653e1b03f7e84bf
+  PASS  Route table associated with subnet-0626dd3e3959d1018
+  PASS  alb SG allows port 80 from anywhere
+  PASS  app SG allows port 8000 from the alb SG
+  PASS  app SG does NOT allow port 8000 from anywhere
+
+All checks passed.

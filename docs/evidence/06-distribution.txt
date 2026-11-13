@@ -1,0 +1,13 @@
+Distribution test: 200 requests to http://cowin-it457-alb-1251153005.ap-south-1.elb.amazonaws.com/centers (2026-11-13T10:49:52Z)
+    sent 50
+    sent 100
+    sent 150
+    sent 200
+
+Availability Zone     requests     share
+ap-south-1a                 99     49.5%
+ap-south-1b                 99     49.5%
+failed (non-200)             2      1.0%
+
+200 requests in 26.4 s (8 requests/s, one at a time)
+RESULT: FAIL - 2 request(s) failed: Counter({'000': 2})

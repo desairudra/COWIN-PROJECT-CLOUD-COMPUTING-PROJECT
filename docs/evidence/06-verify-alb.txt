@@ -1,0 +1,22 @@
+Load balancer check for cowin-it457 in ap-south-1 (2026-11-13T10:46:35Z)
+  PASS  load balancer is active
+  PASS  it is internet-facing
+  PASS  it is an Application Load Balancer
+  PASS  it sits in both subnets
+  PASS  it spans ap-south-1a and ap-south-1b
+  PASS  it uses the alb security group
+  PASS  listener: HTTP :80 forwards to the target group
+  PASS  targets on port 8000
+  PASS  health check path /health
+  PASS  health check every 5 s
+  PASS  unhealthy after 2 failed checks
+  PASS  healthy after 2 passed checks
+  PASS  deregistration delay 10 s
+  PASS  exactly 2 targets registered
+  PASS  server-a (ap-south-1a) is healthy
+  PASS  server-b (ap-south-1b) is healthy
+  PASS  live URL http://cowin-it457-alb-1251153005.ap-south-1.elb.amazonaws.com/health answers
+  PASS  servers are NOT reachable directly (only through the load balancer)
+
+Live URL: http://cowin-it457-alb-1251153005.ap-south-1.elb.amazonaws.com/centers
+All checks passed.

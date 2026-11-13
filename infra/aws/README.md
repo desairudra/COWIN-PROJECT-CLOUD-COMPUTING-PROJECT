@@ -295,3 +295,57 @@ Options: `?target=/centers` polls another path; the dropdown changes the rate (1
 
 Evidence for `docs/evidence/`: `07-monitor.png`, the page after a minute of normal traffic,
 showing both zones and 0 failed.
+
+##  Zone A shutdown test (E5)
+
+The proof for Step 5: while the live site is being used, stop the server in Zone A and
+measure what users see.
+
+```bash
+./infra/aws/08_failover_test.sh hard        # stop server-a without warning
+./infra/aws/08_failover_test.sh graceful    # remove it from the load balancer first, then stop it
+```
+
+Each run takes about 5 minutes:
+- probes the live URL 5 times a second for 180 s;
+- stops server-a at 60 s;
+- records both targets' health every 2 s;
+- starts server-a again and re-registers it.
+
+Results go to `docs/evidence/08-failover-<time>-<mode>/`:
+
+| File | What it is |
+| --- | --- |
+| `results.md` | Verdict and the numbers: failed requests, longest stretch with no successful answer, when the load balancer noticed |
+| `timeline.svg` | Every request on a timeline, one row per zone plus failures |
+| `probe.csv` | Every request: time, status, zone, instance, latency |
+| `health.csv` | The load balancer's view of each target every 2 s |
+
+**What "no downtime" means here:** the verdict is PASS when the longest stretch with no
+successful answer stays under 5 seconds, so a user who retried was never locked out.
+
+**Expected results:**
+- **Hard stop:** a short burst of failed requests (about half the traffic for roughly 10 s),
+  because the load balancer only stops using server-a after 2 failed health checks 5 s apart.
+- **Graceful stop:** 0 failed, because server-a is drained before it goes down.
+
+Report both: the difference is what health checks and connection draining are for.
+
+### Recording the demo
+
+1. Open `http://<ALB DNS name>/monitor` and start a screen recording.
+2. Run `./infra/aws/08_failover_test.sh hard` in a terminal next to it.
+3. At 60 s the strip turns all green, with a few red ticks. Keep recording until the end.
+4. Save the recording as `docs/evidence/08-failover.mp4`. If it is over about 50 MB, upload it
+   to Google Drive and put the link in `docs/evidence/README.md` instead.
+
+Settings: `DURATION=300 KILL_AT=120 RATE=10 ./infra/aws/08_failover_test.sh hard`.
+`SKIP_RESTORE=1` leaves server-a stopped.
+
+### How this was tested
+
+The full script ran on the moto emulator, with the prober pointed at a local stand-in load
+balancer and the zone A app copy really killed at the stop moment. Hard mode gave
+4 failed requests with a 0.4 s worst gap (PASS). Graceful mode gave 0 failed (PASS). A
+synthetic 8 s blackout was reported as FAIL. Those test outputs are not in the repo: only
+real AWS runs belong in `docs/evidence/`.

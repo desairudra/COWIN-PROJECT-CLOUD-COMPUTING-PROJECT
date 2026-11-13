@@ -13,3 +13,7 @@ awscliv2.zip
 infra/aws/.state/
 *.pem
 .aws/
+
+# AWS CLI installer (never commit)
+aws/
+awscliv2.zip

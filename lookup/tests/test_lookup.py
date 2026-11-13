@@ -172,3 +172,15 @@ def test_detect_env_override(monkeypatch):
     info = instance.detect()
     assert info == {**info, "instance_id": "demo-a", "availability_zone": "ap-south-1a",
                     "region": "ap-south-1", "source": "env"}
+
+
+def test_monitor_page_is_served(client):
+    r = client.get("/monitor")
+    assert r.status_code == 200
+    assert r.headers["content-type"].startswith("text/html")
+    assert "Zone monitor" in r.text and "X-Availability-Zone" in r.text
+    assert r.headers["Cache-Control"] == "no-store"
+
+
+def test_info_lists_monitor(client):
+    assert "/monitor" in client.get("/").json()["endpoints"]

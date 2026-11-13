@@ -1,6 +1,6 @@
-# Vaccine Center Lookup microservice
+# Vaccine Center Lookup microservice (commit 3)
 
-A  very simple microservice that returns static JSON. It lists 20
+Step 2 of the TA brief: a very simple microservice that returns static JSON. It lists 20
 made-up vaccination centres, 10 in Mumbai and 10 in Hyderabad. Commits 5 to 8 deploy it on
 two EC2 servers in two Availability Zones, put a load balancer in front, and shut one zone
 down to test failover.
@@ -11,6 +11,7 @@ down to test failover.
 | `GET /health` | `{"status": "ok", ...}`, the load balancer's health check (commit 6) |
 | `GET /centers` | All centres. Optional filters: `city` (`Mumbai`, `Hyderabad`), `pincode` (6 digits), `vaccine` (`COVISHIELD`, `COVAXIN`, `SPUTNIK V`), `center_type` (`GOVERNMENT`, `PRIVATE`) |
 | `GET /centers/{id}` | One centre, e.g. `/centers/MUM-001`; `404` if unknown |
+| `GET /monitor` | Live page: polls `/health` twice a second and shows which zone answered each request, failed requests and the longest outage (commit 7) |
 | `GET /docs` | Interactive API docs |
 
 ## Which server answered
@@ -49,6 +50,17 @@ Tests (no database or AWS needed):
 pip install -r requirements-dev.txt
 pytest -v
 ```
+
+## Notes for the next commits
+
+- **Commit 5 (EC2):** works on Python 3.9, the default on Amazon Linux 2023 (tested on 3.9
+  and 3.13), so `dnf install python3-pip` and `pip install -r requirements.txt` are enough.
+  Run `uvicorn app.main:app --host 0.0.0.0 --port 8000` from `lookup/` under systemd. Check
+  each server with `scripts/smoke_test.sh http://<server>:8000`.
+- **Commit 6 (ALB):** health check path `/health`, port 8000, success code 200. To see the
+  traffic split, read the `X-Availability-Zone` header on repeated requests.
+- **Commit 8 (failover):** the prober should log `X-Availability-Zone` and the status code
+  for each request.
 
 The data file is `app/data/centers.json`. Centre names are fictional; the areas and PIN
 codes are real places, used only for filtering. Not affiliated with the official CoWIN platform.

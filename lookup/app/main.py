@@ -1,4 +1,4 @@
-"""Vaccine Center Lookup microservice 
+"""Vaccine Center Lookup microservice (commit 3, Step 2 of the TA brief).
 
 A deliberately small, stateless service that returns static JSON. Every
 response says which server and Availability Zone answered (`served_by`, plus
@@ -9,6 +9,7 @@ X-Instance-Id / X-Availability-Zone headers), so the load balancer's spreading
     GET /health               health check for the load balancer
     GET /centers              all centres; filters: city, pincode, vaccine, center_type
     GET /centers/{center_id}  one centre
+    GET /monitor              live page showing which zone answers each request
 
 Run:  uvicorn app.main:app --host 0.0.0.0 --port 8000      (from lookup/)
 Docs: http://localhost:8000/docs
@@ -23,12 +24,13 @@ from enum import Enum
 from typing import Any, Dict, List, Optional
 
 from fastapi import FastAPI, HTTPException, Query, Request
-from fastapi.responses import JSONResponse
+from fastapi.responses import FileResponse, JSONResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from .instance import detect
 
 DATA_FILE = pathlib.Path(__file__).parent / "data" / "centers.json"
+MONITOR_PAGE = pathlib.Path(__file__).parent / "static" / "monitor.html"
 VERSION = "1.0.0"
 
 
@@ -68,6 +70,7 @@ def create_app(served_by: Optional[Dict[str, str]] = None,
         response = await call_next(request)
         response.headers["X-Instance-Id"] = served_by["instance_id"]
         response.headers["X-Availability-Zone"] = served_by["availability_zone"]
+        # Never let a browser or proxy cache an answer: during the failover
         # test every request must really reach a server.
         response.headers["Cache-Control"] = "no-store"
         return response
@@ -81,7 +84,7 @@ def create_app(served_by: Optional[Dict[str, str]] = None,
         return {
             "service": "vaccine-center-lookup",
             "version": VERSION,
-            "endpoints": ["/health", "/centers", "/centers/{center_id}", "/docs"],
+            "endpoints": ["/health", "/centers", "/centers/{center_id}", "/monitor", "/docs"],
             "served_by": served_by,
         }
 
@@ -90,6 +93,10 @@ def create_app(served_by: Optional[Dict[str, str]] = None,
         # Cheap on purpose: the ALB calls this every few seconds per server.
         return {"status": "ok", "centers_loaded": len(centers),
                 "uptime_s": round(time.time() - started, 1), "served_by": served_by}
+
+    @app.get("/monitor", include_in_schema=False)
+    def monitor():
+        return FileResponse(MONITOR_PAGE, media_type="text/html")
 
     @app.get("/centers", tags=["centers"])
     def list_centers(

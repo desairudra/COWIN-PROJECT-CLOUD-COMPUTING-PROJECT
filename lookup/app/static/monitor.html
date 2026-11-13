@@ -1,0 +1,225 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Zone monitor</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='7' height='16' fill='%231f5fa8'/%3E%3Crect x='9' width='7' height='16' fill='%230b8a6f'/%3E%3C/svg%3E">
+<style>
+  :root {
+    --bg: #f4f6f5; --card: #fff; --ink: #17242b; --muted: #5b6b71; --line: #d3dcd9;
+    --a: #1f5fa8; --b: #0b8a6f; --fail: #c0362c; --other: #8a6d00;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font: 15px/1.5 system-ui, "Segoe UI", sans-serif; color: var(--ink); background: var(--bg); }
+  main { max-width: 1040px; margin: 0 auto; padding: 28px 20px 40px; }
+  header { display: flex; justify-content: space-between; align-items: end; flex-wrap: wrap; gap: 12px; margin-bottom: 20px; }
+  h1 { margin: 0; font-size: 26px; }
+  .target { color: var(--muted); font-size: 13px; word-break: break-all; }
+  .controls { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  button, select { font: inherit; padding: 6px 12px; border: 1px solid var(--line); border-radius: 6px; background: var(--card); cursor: pointer; }
+  button.primary { background: var(--ink); color: #fff; border-color: var(--ink); }
+  .grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 16px; }
+  .stat { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; }
+  .stat .label { color: var(--muted); font-size: 13px; }
+  .stat .value { font-size: 30px; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .stat .sub { color: var(--muted); font-size: 12px; font-variant-numeric: tabular-nums; }
+  .stat.a .value { color: var(--a); } .stat.b .value { color: var(--b); } .stat.fail .value { color: var(--fail); }
+  .panel { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 16px; margin-bottom: 16px; }
+  .panel h2 { margin: 0 0 10px; font-size: 15px; }
+  #strip { display: grid; grid-template-columns: repeat(60, 1fr); gap: 2px; }
+  #strip span { height: 34px; border-radius: 2px; background: #e6ecea; }
+  #strip .a { background: var(--a); } #strip .b { background: var(--b); }
+  #strip .fail { background: var(--fail); } #strip .other { background: var(--other); }
+  .legend { display: flex; gap: 16px; flex-wrap: wrap; margin-top: 10px; color: var(--muted); font-size: 13px; }
+  .legend i { display: inline-block; width: 11px; height: 11px; border-radius: 2px; margin-right: 5px; vertical-align: -1px; }
+  #now { font-size: 20px; font-weight: 700; }
+  #now.a { color: var(--a); } #now.b { color: var(--b); } #now.fail { color: var(--fail); }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; font-variant-numeric: tabular-nums; }
+  th, td { text-align: left; padding: 5px 8px; border-bottom: 1px solid var(--line); }
+  th { color: var(--muted); font-weight: 600; }
+  td.fail { color: var(--fail); font-weight: 600; }
+  #log { max-height: 260px; overflow-y: auto; }
+  @media (max-width: 720px) {
+    .grid { grid-template-columns: repeat(2, 1fr); }
+    #strip { grid-template-columns: repeat(30, 1fr); }
+    th:nth-child(5), td:nth-child(5), th:nth-child(1), td:nth-child(1) { display: none; }
+    .stat .value { font-size: 26px; }
+  }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <div>
+      <h1>Zone monitor</h1>
+      <div class="target">Polling <span id="url"></span></div>
+    </div>
+    <div class="controls">
+      <select id="every" aria-label="Request interval">
+        <option value="250">4 per second</option>
+        <option value="500" selected>2 per second</option>
+        <option value="1000">1 per second</option>
+      </select>
+      <button id="toggle" class="primary">Pause</button>
+      <button id="reset">Reset</button>
+      <button id="export">Download CSV</button>
+    </div>
+  </header>
+
+  <section class="grid">
+    <div class="stat a"><div class="label" id="labelA">ap-south-1a</div><div class="value" id="countA">0</div><div class="sub" id="shareA">0%</div></div>
+    <div class="stat b"><div class="label" id="labelB">ap-south-1b</div><div class="value" id="countB">0</div><div class="sub" id="shareB">0%</div></div>
+    <div class="stat fail"><div class="label">Failed requests</div><div class="value" id="failed">0</div><div class="sub" id="outage">Longest outage: 0.0 s</div></div>
+    <div class="stat"><div class="label">Last answer</div><div id="now">-</div><div class="sub" id="latency">-</div></div>
+  </section>
+
+  <section class="panel">
+    <h2>Last 60 requests (newest on the right)</h2>
+    <div id="strip"></div>
+    <div class="legend">
+      <span><i style="background:var(--a)"></i><span id="legendA">ap-south-1a</span></span>
+      <span><i style="background:var(--b)"></i><span id="legendB">ap-south-1b</span></span>
+      <span><i style="background:var(--fail)"></i>failed or timed out (2 s)</span>
+      <span><i style="background:var(--other)"></i>other zone</span>
+    </div>
+  </section>
+
+  <section class="panel">
+    <h2>Request log</h2>
+    <div id="log">
+      <table>
+        <thead><tr><th>#</th><th>Time</th><th>Status</th><th>Zone</th><th>Instance</th><th>ms</th></tr></thead>
+        <tbody id="rows"></tbody>
+      </table>
+    </div>
+  </section>
+</main>
+
+<script>
+const params = new URLSearchParams(location.search);
+const target = params.get("target") || "/health";
+const STRIP = 60, LOG_ROWS = 200, TIMEOUT_MS = 2000;
+
+const $ = (id) => document.getElementById(id);
+const zones = [];
+let results = [], seq = 0, timer = null, running = true;
+let outageStart = null, longestOutage = 0;
+
+$("url").textContent = new URL(target, location.href).href;
+
+function zoneClass(zone) {
+  if (!zone) return "fail";
+  if (!zones.includes(zone) && zones.length < 2) zones.push(zone), zones.sort(), renderZoneLabels();
+  const i = zones.indexOf(zone);
+  return i === 0 ? "a" : i === 1 ? "b" : "other";
+}
+
+function renderZoneLabels() {
+  if (zones[0]) $("labelA").textContent = $("legendA").textContent = zones[0];
+  if (zones[1]) $("labelB").textContent = $("legendB").textContent = zones[1];
+}
+
+async function probe() {
+  const n = ++seq, started = performance.now(), at = new Date();
+  const ctrl = new AbortController();
+  const kill = setTimeout(() => ctrl.abort(), TIMEOUT_MS);
+  let status = 0, zone = "", instance = "";
+  try {
+    const res = await fetch(target, { cache: "no-store", signal: ctrl.signal });
+    status = res.status;
+    zone = res.headers.get("X-Availability-Zone") || "";
+    instance = res.headers.get("X-Instance-Id") || "";
+    if (!zone) {
+      const body = await res.json().catch(() => ({}));
+      zone = body.served_by?.availability_zone || "";
+      instance = body.served_by?.instance_id || "";
+    }
+  } catch (e) {
+    status = 0;
+  } finally {
+    clearTimeout(kill);
+  }
+  const ok = status === 200;
+  record({ n, at, status, zone: ok ? zone : "", instance: ok ? instance : "", ms: Math.round(performance.now() - started) });
+}
+
+function record(r) {
+  results.push(r);
+  if (r.zone) {
+    if (outageStart) longestOutage = Math.max(longestOutage, r.at - outageStart), outageStart = null;
+  } else if (!outageStart) {
+    outageStart = r.at;
+  }
+  render(r);
+}
+
+function render(last) {
+  const counts = {};
+  let failed = 0;
+  for (const r of results) r.zone ? (counts[r.zone] = (counts[r.zone] || 0) + 1) : failed++;
+  const total = results.length || 1;
+  const cls = zoneClass(last.zone);
+  for (const [key, zone] of [["A", zones[0]], ["B", zones[1]]]) {
+    const c = counts[zone] || 0;
+    $("count" + key).textContent = c;
+    $("share" + key).textContent = Math.round((c / total) * 100) + "% of requests";
+  }
+  $("failed").textContent = failed;
+  const current = outageStart ? last.at - outageStart : 0;
+  $("outage").textContent = `Longest outage: ${(Math.max(longestOutage, current) / 1000).toFixed(1)} s`;
+  $("now").textContent = last.zone || (last.status ? `HTTP ${last.status}` : "no answer");
+  $("now").className = cls;
+  $("latency").textContent = last.zone ? `${last.instance} · ${last.ms} ms` : `after ${last.ms} ms`;
+
+  const strip = $("strip");
+  const cell = document.createElement("span");
+  cell.className = cls;
+  cell.title = `#${last.n} ${last.zone || "failed"} ${last.ms} ms`;
+  strip.appendChild(cell);
+  while (strip.children.length > STRIP) strip.firstChild.remove();
+
+  const row = document.createElement("tr");
+  const cells = [last.n, last.at.toLocaleTimeString(), last.status || "-", last.zone || "-", last.instance || "-", last.ms];
+  for (const v of cells) { const td = document.createElement("td"); td.textContent = v; row.appendChild(td); }
+  if (!last.zone) row.children[2].className = row.children[3].className = "fail";
+  const rows = $("rows");
+  rows.prepend(row);
+  while (rows.children.length > LOG_ROWS) rows.lastChild.remove();
+}
+
+function start() {
+  clearInterval(timer);
+  timer = setInterval(probe, Number($("every").value));
+  running = true;
+  $("toggle").textContent = "Pause";
+}
+
+function stop() {
+  clearInterval(timer);
+  running = false;
+  $("toggle").textContent = "Resume";
+}
+
+$("toggle").onclick = () => (running ? stop() : start());
+$("every").onchange = () => running && start();
+$("reset").onclick = () => {
+  results = []; seq = 0; outageStart = null; longestOutage = 0;
+  $("strip").innerHTML = ""; $("rows").innerHTML = "";
+  for (const id of ["countA", "countB", "failed"]) $(id).textContent = "0";
+  $("now").textContent = "-"; $("now").className = ""; $("latency").textContent = "-";
+  $("outage").textContent = "Longest outage: 0.0 s";
+};
+$("export").onclick = () => {
+  const lines = ["n,time_iso,status,zone,instance,ms"];
+  for (const r of results) lines.push([r.n, r.at.toISOString(), r.status, r.zone, r.instance, r.ms].join(","));
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([lines.join("\n")], { type: "text/csv" }));
+  a.download = `zone-monitor-${new Date().toISOString().slice(0, 19).replace(/:/g, "")}.csv`;
+  a.click();
+};
+
+start();
+</script>
+</body>
+</html>

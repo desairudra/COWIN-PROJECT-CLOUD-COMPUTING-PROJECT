@@ -14,10 +14,14 @@
 | `verify_alb.sh` | 6 | Checks the load balancer, health checks, targets and live URL, PASS/FAIL |
 | `distribution_test.sh` | 6 | Sends 200 requests and counts how many each zone answered |
 | `97_teardown_alb.sh` | 6 | Deletes the load balancer and target group |
+| `10_monitoring.sh` | 10 | CloudWatch dashboard and four alarms |
+| `verify_monitoring.sh` | 10 | Checks the dashboard, alarms and live metrics, PASS/FAIL |
+| `export_graphs.sh` | 10 | Saves CloudWatch graphs as PNGs, e.g. around a failover run |
+| `96_teardown_monitoring.sh` | 10 | Deletes the dashboard, alarms and email topic |
 | `config.sh` | 4 | Shared settings (region, CIDRs, names); every script reads it |
 
 Scripts save the IDs they create in `.state/` (not committed: it is per-account), and later
-scripts read them. Tear down in reverse order: `97` (load balancer), then `98` (servers), then `99` (network).
+scripts read them. Tear down in reverse order: `96` (monitoring), `97` (load balancer), `98` (servers), `99` (network).
 
 ## Commit 4: the network
 

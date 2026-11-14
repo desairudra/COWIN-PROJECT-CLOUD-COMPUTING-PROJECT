@@ -1,0 +1,17 @@
+Monitoring check for cowin-it457 in ap-south-1 (2026-11-14T06:25:54Z)
+  PASS  dashboard cowin-it457 exists with 7 widgets
+  PASS  alarm healthy-hosts-low: HealthyHostCount < 2
+  PASS  alarm zone-a-down: ap-south-1a < 1
+  PASS  alarm zone-b-down: ap-south-1b < 1
+  PASS  alarm elb-5xx: 5 or more per minute
+  PASS  alarms watch this load balancer
+  PASS  alarms look at 1-minute periods
+  PASS  load balancer reports 2 healthy servers (latest minute)
+
+Alarm states (OK = fine; INSUFFICIENT_DATA = no metrics yet, wait a few minutes):
+    cowin-it457-elb-5xx	INSUFFICIENT_DATA
+    cowin-it457-healthy-hosts-low	OK
+    cowin-it457-zone-a-down	OK
+    cowin-it457-zone-b-down	OK
+
+All checks passed.

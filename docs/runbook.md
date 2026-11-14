@@ -31,6 +31,9 @@ The live URL is printed by step 5 and saved in `infra/aws/.state/alb.env`. It st
 long as the load balancer is not deleted. If it changes, update the URL at the top of
 `README.md`.
 
+Load test (optional, about 6 minutes, after step 6): `./loadtest/run.sh lookup`. Results go to
+`docs/evidence/13-load-lookup-<time>/`; see [`loadtest/README.md`](../loadtest/README.md).
+
 To check the servers directly before step 5 (optional):
 `./infra/aws/allow_my_ip.sh add`, `./infra/aws/verify_servers.sh`, then always
 `./infra/aws/allow_my_ip.sh remove`.

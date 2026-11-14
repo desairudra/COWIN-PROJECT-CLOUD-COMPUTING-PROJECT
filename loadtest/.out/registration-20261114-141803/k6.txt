@@ -1,0 +1,34 @@
+
+
+  █ TOTAL RESULTS 
+
+    checks_total.......: 6180    61.783984/s
+    checks_succeeded...: 100.00% 6180 out of 6180
+    checks_failed......: 0.00%   0 out of 6180
+
+    ✓ otp request 200
+    ✓ verify 200
+    ✓ add 201
+    ✓ list has it
+
+    CUSTOM
+    signups_ok.....................: 1545   15.445996/s
+
+    HTTP
+    http_req_duration..............: avg=5.55ms min=1.49ms med=4.9ms   p(90)=9.11ms  p(95)=10.38ms p(99)=12.78ms max=35.65ms
+      { expected_response:true }...: avg=5.55ms min=1.49ms med=4.9ms   p(90)=9.11ms  p(95)=10.38ms p(99)=12.78ms max=35.65ms
+    http_req_failed................: 0.00%  0 out of 6181
+    http_reqs......................: 6181   61.793981/s
+
+    EXECUTION
+    iteration_duration.............: avg=23.3ms min=9.28ms med=21.49ms p(90)=35.09ms p(95)=38.53ms p(99)=44.56ms max=70.73ms
+    iterations.....................: 1545   15.445996/s
+    vus............................: 1      min=0         max=1 
+    vus_max........................: 30     min=30        max=30
+
+    NETWORK
+    data_received..................: 2.8 MB 28 kB/s
+    data_sent......................: 2.1 MB 21 kB/s
+
+
+

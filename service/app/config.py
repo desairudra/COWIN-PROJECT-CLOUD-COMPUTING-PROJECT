@@ -37,6 +37,17 @@ class Settings:
     # it is only written to the service log.
     otp_delivery: str = field(default_factory=lambda: os.environ.get("OTP_DELIVERY", "demo"))
 
+    # Redis for rate limits and OTP state (commit 12). Empty = no limits (local dev only).
+    redis_url: str = field(default_factory=lambda: os.environ.get("REDIS_URL", ""))
+    rate_limit_enabled: bool = field(default_factory=lambda: _bool("RATE_LIMIT_ENABLED", True))
+    rate_limit_capacity: int = field(default_factory=lambda: int(os.environ.get("RATE_LIMIT_CAPACITY", "100")))
+    rate_limit_window_s: float = field(default_factory=lambda: float(os.environ.get("RATE_LIMIT_WINDOW_S", "300")))
+    otp_cooldown_s: int = field(default_factory=lambda: int(os.environ.get("OTP_COOLDOWN_S", "30")))
+    otp_max_per_hour: int = field(default_factory=lambda: int(os.environ.get("OTP_MAX_PER_HOUR", "5")))
+    otp_max_attempts: int = field(default_factory=lambda: int(os.environ.get("OTP_MAX_ATTEMPTS", "3")))
+    # Proxies in front of the service whose X-Forwarded-For entry is trusted: 1 behind the ALB.
+    trust_proxy: int = field(default_factory=lambda: int(os.environ.get("TRUST_PROXY", "0")))
+
     cors_origins: list[str] = field(default_factory=lambda: _list("CORS_ORIGINS"))
     # Directory with the web frontend; served at "/" if it exists.
     web_dir: str = field(default_factory=lambda: os.environ.get(
@@ -54,5 +65,9 @@ class Settings:
             raise RuntimeError("SECRET_KEY must be at least 16 characters")
         if self.otp_delivery not in {"demo", "log"}:
             raise RuntimeError("OTP_DELIVERY must be 'demo' or 'log'")
+        if not self.redis_url:
+            if self.app_env not in {"dev", "test"}:
+                raise RuntimeError("REDIS_URL must be set outside dev: it holds rate limits and OTP state")
+            warnings.warn("REDIS_URL not set: no rate limits, OTPs reusable until they expire. Dev only.")
         if not 4 <= self.otp_length <= 8:
             raise RuntimeError("OTP_LENGTH must be between 4 and 8")

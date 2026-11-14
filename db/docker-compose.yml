@@ -1,4 +1,4 @@
-# Local PostgreSQL for developing and testing the registration schema.
+# Local PostgreSQL (and Redis, from commit 12) for developing and testing the registration module.
 # The full stack (service, Redis, NGINX, kind) comes in commit 5; this file
 # only gives everyone the same database to work against.
 #
@@ -23,6 +23,18 @@ services:
       - cowin-db-data:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U cowin -d cowin"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  redis:
+    image: redis:7
+    container_name: cowin-redis
+    command: ["redis-server", "--save", "", "--appendonly", "no"]
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
       interval: 5s
       timeout: 3s
       retries: 10

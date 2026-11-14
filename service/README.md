@@ -1,4 +1,4 @@
-# Registration service (commit 11)
+# Registration service (commit 2)
 
 FastAPI service for our scaled-down CoWIN registration module (Week 2 report
 Sec 9.2, 9.4). It sits on the PostgreSQL schema from commit 1.
@@ -22,14 +22,16 @@ cd service
 pip install -r requirements.txt
 export DATABASE_URL=postgresql://cowin:cowin@localhost:5432/cowin
 export SECRET_KEY=change-me-to-a-long-random-string
+export REDIS_URL=redis://localhost:6379/0
 uvicorn app.main:app --reload --port 8000              # http://localhost:8000/docs
 ```
 
-Tests (need a throwaway database, same as `db/tests`):
+Tests (need a throwaway database and Redis; `db/docker-compose.yml` starts both):
 
 ```bash
 pip install -r requirements-dev.txt
-TEST_DATABASE_URL=postgresql://cowin:cowin@localhost:5432/cowin_test pytest -v
+TEST_DATABASE_URL=postgresql://cowin:cowin@localhost:5432/cowin_test \
+TEST_REDIS_URL=redis://localhost:6379/15 pytest -v      # 42 tests
 ```
 
 ## Configuration
@@ -44,6 +46,12 @@ TEST_DATABASE_URL=postgresql://cowin:cowin@localhost:5432/cowin_test pytest -v
 | `OTP_TTL_SECONDS` | `180` | OTP lifetime |
 | `SESSION_TTL_SECONDS` | `900` | session token lifetime |
 | `DB_POOL_MIN` / `DB_POOL_MAX` | `1` / `10` | connections per replica |
+| `REDIS_URL` | empty | Redis for limits and OTP state; **required outside `APP_ENV=dev`** |
+| `RATE_LIMIT_ENABLED` | `true` | `false` turns all limits off (used by E4's baseline) |
+| `RATE_LIMIT_CAPACITY` / `RATE_LIMIT_WINDOW_S` | `100` / `300` | calls per client per window |
+| `OTP_COOLDOWN_S` / `OTP_MAX_PER_HOUR` | `30` / `5` | OTPs per mobile |
+| `OTP_MAX_ATTEMPTS` | `3` | wrong guesses per OTP |
+| `TRUST_PROXY` | `0` | `1` behind the load balancer |
 | `CORS_ORIGINS` | empty | comma-separated origins, only if the frontend is hosted elsewhere |
 | `WEB_DIR` | `../web` | if it holds an `index.html`, it is served at `/` |
 
@@ -51,7 +59,7 @@ TEST_DATABASE_URL=postgresql://cowin:cowin@localhost:5432/cowin_test pytest -v
 
 **Stateless (Sec 9.4).** Nothing about a user is kept in process memory, so the
 load balancer can send any request to any replica, and the autoscaler can add or
-remove replicas at any time (commit 14). Following CoWIN's own API shape
+remove replicas at any time (commit 5). Following CoWIN's own API shape
 (generate OTP returns a `txnId`, confirm OTP returns a token):
 
 - the `txn_id` is a signed token holding the mobile number, an expiry, and an
@@ -80,13 +88,32 @@ remove replicas at any time (commit 14). Following CoWIN's own API shape
 | 422 | `INVALID_INPUT` (+ `details`), `IDEMPOTENCY_KEY_REUSED` | bad fields, key reused |
 | 503 | `DB_UNAVAILABLE` | database unreachable |
 
-## Known gaps, closed by commit 12 (rate limiter + Redis)
+## Rate limits and OTP protection (commit 12)
 
-- No limit yet on OTP requests per mobile or per client, so an OTP flood is possible. E4
-  measures this before and after the limiter.
-- A `txn_id` can be tried repeatedly until it expires, and it stays valid after a
-  successful verify. Redis adds one-time use and a cap on wrong attempts.
-  Until then, keep `OTP_LENGTH=6`.
+Redis holds the limits and OTP state, so every replica enforces the same counts.
+
+| Layer | Rule | Stops | Response |
+| --- | --- | --- | --- |
+| Per client IP | Token bucket: 100 calls per 5 minutes (Sec 4.2) | One machine flooding the API | `429 RATE_LIMITED` + `Retry-After` |
+| Per mobile | One OTP every 30 s, at most 5 an hour | A botnet "SMS-bombing" one phone | `429 OTP_TOO_SOON` + `Retry-After` |
+| Per OTP | 3 wrong guesses, then locked | Guessing the code | `429 OTP_LOCKED` |
+| Per OTP | Usable once | Replaying a stolen code | `401 OTP_USED` |
+
+Every `/api/` response carries `X-RateLimit-Limit` and `X-RateLimit-Remaining`. Health checks
+and the web page are never limited.
+
+The bucket is a Lua script that runs inside Redis, so concurrent requests from many replicas
+cannot overspend it: 50 simultaneous requests against 20 tokens give exactly 20 successes
+(tested). Behind the load balancer set `TRUST_PROXY=1`. The client is then the last
+`X-Forwarded-For` entry, the one the load balancer adds, so a client cannot dodge its bucket
+by sending a fake header.
+
+If Redis is down, rate limits **fail open** (requests are allowed and a warning is logged, so a
+cache outage does not take the site down) and OTP requests and checks **fail closed**
+(`503 OTP_UNAVAILABLE`, because skipping the guess limit would be a security hole).
+`/readyz` returns `503 NOT_READY`, so Kubernetes stops sending traffic to that pod.
+
+Experiment **E4** measures all of this: [`experiments/e4_otp_flood/`](../experiments/e4_otp_flood/README.md).
 
 The SMS step is simulated. The Sec 9.5 design puts it on SQS/SNS so sending never
 blocks a registration.

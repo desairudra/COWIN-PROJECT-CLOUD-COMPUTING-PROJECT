@@ -1,4 +1,4 @@
-"""CoWIN registration service (commit 11). Report Sec 9.2 and 9.4.
+"""CoWIN registration service (commit 11; limits in commit 12). Report Sec 9.2 and 9.4.
 
 Four operations:
     POST /api/v1/otp/request      request an OTP for a mobile number
@@ -6,10 +6,12 @@ Four operations:
     POST /api/v1/beneficiaries    add a beneficiary   (needs Idempotency-Key header)
     GET  /api/v1/beneficiaries    list beneficiaries under the mobile
 
-Stateless: no user data is kept in process memory. OTP transactions and
-sessions are signed tokens, and everything durable is in PostgreSQL. Any
-replica can serve any request, which is what the load balancer and the
-autoscaler (commit 14) need.
+Stateless: no user data is kept in process memory. Sessions are signed
+tokens, rate limits and OTP state are in Redis, everything durable is in
+PostgreSQL. Any replica can serve any request.
+
+Limits (commit 12, app/limits.py): 100 calls per 5 minutes per client, one OTP
+per mobile every 30 s and 5 per hour, 3 wrong OTP guesses, OTPs used once.
 
 Retry-safe: verify-OTP is an upsert and add-beneficiary is keyed by the
 client's Idempotency-Key, so repeating any request never creates duplicates.
@@ -25,12 +27,14 @@ from contextlib import asynccontextmanager
 
 from fastapi import Depends, FastAPI, Header, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 
 from . import errors
 from .config import Settings
 from .db import Database
 from .errors import ApiError
+from .limits import Limits, LimitsUnavailable, client_id
 from .schemas import (BeneficiaryCreated, BeneficiaryIn, BeneficiaryList, OtpRequest,
                       OtpRequested, OtpVerify, Session)
 from .security import Signer, TokenError
@@ -48,6 +52,8 @@ def create_app(settings: Settings | None = None, database: Database | None = Non
     settings = settings or Settings()
     db = database or Database(settings.database_url, settings.db_pool_min, settings.db_pool_max)
     signer = Signer(settings.secret_key)
+    limits = Limits(settings.redis_url, settings) if settings.redis_url else None
+    enforce = bool(limits) and settings.rate_limit_enabled
 
     @asynccontextmanager
     async def lifespan(_: FastAPI):
@@ -64,7 +70,8 @@ def create_app(settings: Settings | None = None, database: Database | None = Non
         app.add_middleware(CORSMiddleware, allow_origins=settings.cors_origins,
                            allow_methods=["GET", "POST"],
                            allow_headers=["Authorization", "Content-Type", "Idempotency-Key"],
-                           expose_headers=["Idempotent-Replayed", "X-Served-By"])
+                           expose_headers=["Idempotent-Replayed", "X-Served-By", "Retry-After",
+                                           "X-RateLimit-Limit", "X-RateLimit-Remaining"])
 
     @app.middleware("http")
     async def served_by(request: Request, call_next):
@@ -72,6 +79,27 @@ def create_app(settings: Settings | None = None, database: Database | None = Non
         response = await call_next(request)
         response.headers["X-Served-By"] = HOSTNAME
         return response
+
+    @app.middleware("http")
+    async def rate_limit(request: Request, call_next):
+        if not enforce or not request.url.path.startswith("/api/"):
+            return await call_next(request)
+        d = limits.client(client_id(request, settings.trust_proxy))
+        cap = str(settings.rate_limit_capacity)
+        if not d.allowed:
+            return JSONResponse(
+                errors.body("RATE_LIMITED", f"Too many requests. Try again in {d.retry_after} s."), 429,
+                headers={"Retry-After": str(d.retry_after), "X-RateLimit-Limit": cap,
+                         "X-RateLimit-Remaining": "0"})
+        response = await call_next(request)
+        response.headers["X-RateLimit-Limit"] = cap
+        if d.remaining >= 0:
+            response.headers["X-RateLimit-Remaining"] = str(d.remaining)
+        return response
+
+    def otp_state_down():
+        return ApiError(503, "OTP_UNAVAILABLE", "OTP service is temporarily unavailable. Try again shortly.",
+                        {"Retry-After": "5"})
 
     def current_mobile(authorization: str | None = Header(default=None)) -> str:
         if not authorization or not authorization.lower().startswith("bearer "):
@@ -83,7 +111,7 @@ def create_app(settings: Settings | None = None, database: Database | None = Non
             raise ApiError(401, "UNAUTHENTICATED", "Session is invalid or has expired. Log in again.",
                            {"WWW-Authenticate": "Bearer"})
 
-    # -- health (for Kubernetes probes, commit 14) ---------------------------
+    # -- health (for Kubernetes probes, commit 5) ---------------------------
     @app.get("/healthz", tags=["health"])
     def healthz():
         return {"status": "ok"}
@@ -91,14 +119,30 @@ def create_app(settings: Settings | None = None, database: Database | None = Non
     @app.get("/readyz", tags=["health"])
     def readyz():
         db.ping()
+        if limits:
+            try:
+                limits.ping()
+            except Exception:
+                raise ApiError(503, "NOT_READY", "Redis is unreachable.", {"Retry-After": "5"})
         return {"status": "ready"}
 
     # -- 1. request OTP -------------------------------------------------------
     @app.post("/api/v1/otp/request", response_model=OtpRequested,
               response_model_exclude_none=True, tags=["auth"])
     def request_otp(req: OtpRequest):
-        txn_id, otp = signer.new_otp_transaction(req.mobile, settings.otp_length,
-                                                 settings.otp_ttl_seconds)
+        try:
+            if enforce:
+                d = limits.otp_request(req.mobile)
+                if not d.allowed:
+                    raise ApiError(429, "OTP_TOO_SOON",
+                                   f"An OTP was sent to this number recently. Try again in {d.retry_after} s.",
+                                   {"Retry-After": str(d.retry_after)})
+            txn_id, otp = signer.new_otp_transaction(req.mobile, settings.otp_length,
+                                                     settings.otp_ttl_seconds)
+            if limits:
+                limits.open_txn(signer.verify(txn_id, "otp")["n"], req.mobile, settings.otp_ttl_seconds)
+        except LimitsUnavailable:
+            raise otp_state_down()
         # No SMS gateway in this project. In production this would be put on a
         # queue (SQS/SNS in the Sec 9.5 design) so sending never blocks the request.
         log.info("OTP for %s: %s", mask(req.mobile), otp)
@@ -109,11 +153,30 @@ def create_app(settings: Settings | None = None, database: Database | None = Non
     @app.post("/api/v1/otp/verify", response_model=Session, tags=["auth"])
     def verify_otp(req: OtpVerify):
         try:
-            mobile = signer.check_otp(req.txn_id, req.otp)
+            nonce = signer.verify(req.txn_id, "otp")["n"]
         except TokenError as exc:
             if str(exc) == "token expired":
                 raise ApiError(401, "OTP_EXPIRED", "OTP has expired. Request a new one.")
             raise ApiError(401, "OTP_INVALID", "OTP is incorrect.")
+        tries = 0
+        if limits:
+            try:
+                still_open, tries = limits.attempt(nonce, settings.otp_ttl_seconds)
+            except LimitsUnavailable:
+                raise otp_state_down()
+            if not still_open:
+                raise ApiError(401, "OTP_USED", "This OTP was already used or locked. Request a new one.")
+            if enforce and tries > settings.otp_max_attempts:
+                limits.close_txn(nonce)
+                raise ApiError(429, "OTP_LOCKED", "Too many wrong attempts. Request a new OTP.")
+        try:
+            mobile = signer.check_otp(req.txn_id, req.otp)
+        except TokenError:
+            left = settings.otp_max_attempts - tries
+            hint = f" {left} attempt(s) left." if enforce and left > 0 else ""
+            raise ApiError(401, "OTP_INVALID", "OTP is incorrect." + hint)
+        if limits and not limits.close_txn(nonce):
+            raise ApiError(401, "OTP_USED", "This OTP was already used or locked. Request a new one.")
         reg = db.upsert_registration(mobile)          # retry-safe upsert
         return Session(token=signer.new_session(mobile, settings.session_ttl_seconds),
                        expires_in=settings.session_ttl_seconds, mobile=mobile,

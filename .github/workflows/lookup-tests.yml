@@ -1,6 +1,7 @@
 name: lookup-tests
 
 on:
+  workflow_dispatch:
   push:
     paths: ["lookup/**", ".github/workflows/lookup-tests.yml"]
   pull_request:
@@ -8,10 +9,12 @@ on:
 
 jobs:
   test:
-    runs-on: ubuntu-latest
+    # Pinned: ubuntu-latest is now 26.04, which has no Python 3.9 build.
+    runs-on: ubuntu-24.04
     strategy:
+      fail-fast: false
       matrix:
-        # 3.9 = the default python3 on Amazon Linux 2023, where commit 5 deploys it
+        # 3.9 = the default python3 on Amazon Linux 2023, where the servers run it
         python-version: ["3.9", "3.12"]
     defaults:
       run:
@@ -27,4 +30,4 @@ jobs:
         run: |
           DISABLE_IMDS=1 uvicorn app.main:app --port 8000 &
           sleep 3
-          ./scripts/smoke_test.sh http://localhost:8000
+          bash scripts/smoke_test.sh http://localhost:8000

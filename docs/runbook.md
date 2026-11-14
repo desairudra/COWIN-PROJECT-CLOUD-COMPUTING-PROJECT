@@ -15,7 +15,7 @@ root with the scripts in `infra/aws/`. Details for each script are in
 
 Never commit access keys, `.pem` files or `infra/aws/.state/`.
 
-## Build (about 10 minutes)
+## Build (about 11 minutes)
 
 | # | Command | Takes | Done when |
 | --- | --- | --- | --- |
@@ -25,6 +25,7 @@ Never commit access keys, `.pem` files or `infra/aws/.state/`.
 | 4 | Wait | 3 min | The servers install the app on first boot |
 | 5 | `./infra/aws/06_load_balancer.sh` | 3-5 min | Prints the live URL |
 | 6 | `./infra/aws/verify_alb.sh` | 30 s | `All checks passed.` |
+| 7 | `./infra/aws/10_monitoring.sh` | 10 s | Prints the dashboard link; `verify_monitoring.sh` passes after 2-3 min |
 
 The live URL is printed by step 5 and saved in `infra/aws/.state/alb.env`. It stays the same as
 long as the load balancer is not deleted. If it changes, update the URL at the top of
@@ -63,6 +64,7 @@ the two `results.md` files instead.
 The load balancer and the servers are billed every hour, even with no traffic.
 
 ```bash
+./infra/aws/96_teardown_monitoring.sh   # dashboard and alarms (commit 10)
 ./infra/aws/97_teardown_alb.sh       # load balancer and target group
 ./infra/aws/98_teardown_servers.sh   # both servers
 ./infra/aws/99_teardown_network.sh   # network (free; optional, may need a few minutes after 97)
@@ -80,4 +82,4 @@ Check in the EC2 console that no `cowin-it457` instances or load balancers remai
 | Live URL does not open | Use `http://`, not `https://`; a new load balancer's address takes 1-2 minutes to work |
 | Failover test refuses to start | A target is not healthy, often right after a previous run: wait a minute, `verify_alb.sh` |
 | Changed `lookup/` code | `98_teardown_servers.sh --yes`, `05_servers.sh`, wait 3 min, `06_load_balancer.sh`: same URL, new code |
-| Teardown refuses | Delete in order 97, 98, 99; wait a few minutes between 97 and 99 |
+| Teardown refuses | Delete in order 96, 97, 98, 99; wait a few minutes between 97 and 99 |

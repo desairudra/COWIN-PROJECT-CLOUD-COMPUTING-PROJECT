@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Vaccination registration · IT457 CoWIN case study</title>
+  <meta name="description" content="Course project: a scaled-down model of CoWIN's registration module. Not the official CoWIN platform.">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230b6e5f'/%3E%3Cpath d='M9 16.5l4.5 4.5L23 11.5' stroke='white' stroke-width='3.2' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+  <script src="config.js"></script>
+  <script src="app.js" defer></script>
+</head>
+<body>
+  <p class="notice" role="note">
+    Course project for IT457 Cloud Computing. This is <strong>not</strong> the official CoWIN portal.
+    Use made-up details only; never enter a real ID number.
+  </p>
+
+  <div class="shell">
+    <aside class="intro">
+      <h1>Register for vaccination</h1>
+      <p class="lede">A working model of the registration step that took the 28 April 2021 surge.
+        One mobile number can register up to four people.</p>
+      <ol class="steps" aria-label="How registration works">
+        <li data-step="mobile">Enter your mobile number</li>
+        <li data-step="otp">Confirm the one-time code</li>
+        <li data-step="home">Add up to four people</li>
+      </ol>
+      <p class="rules">The same photo ID can only be registered once. If your connection drops while
+        adding someone, press the button again. You won't be added twice.</p>
+    </aside>
+
+    <main class="panel" aria-live="polite">
+      <!-- 1. Mobile number -->
+      <section id="view-mobile" class="view" hidden>
+        <h2>Your mobile number</h2>
+        <form id="form-mobile" novalidate>
+          <label for="mobile">Mobile number</label>
+          <div class="prefixed">
+            <span aria-hidden="true">+91</span>
+            <input id="mobile" name="mobile" inputmode="numeric" autocomplete="tel-national"
+                   maxlength="10" placeholder="98765 43210" required
+                   aria-describedby="mobile-help mobile-error">
+          </div>
+          <p id="mobile-help" class="help">10 digits, starting with 6, 7, 8 or 9.</p>
+          <p id="mobile-error" class="error" hidden></p>
+          <button type="submit" class="primary">Send code</button>
+        </form>
+      </section>
+
+      <!-- 2. OTP -->
+      <section id="view-otp" class="view" hidden>
+        <h2>Enter the code</h2>
+        <p>Sent to <strong id="otp-mobile"></strong>.
+          <button type="button" class="link" id="change-mobile">Change number</button></p>
+        <div id="demo-otp" class="demo-code" hidden>
+          <p>No text message is sent in this demo. Your code is</p>
+          <output id="demo-otp-value"></output>
+        </div>
+        <form id="form-otp" novalidate>
+          <label for="otp">One-time code</label>
+          <input id="otp" name="otp" class="otp" inputmode="numeric" autocomplete="one-time-code"
+                 maxlength="8" required aria-describedby="otp-error otp-timer">
+          <p id="otp-timer" class="help"></p>
+          <p id="otp-error" class="error" hidden></p>
+          <button type="submit" class="primary">Confirm code</button>
+          <button type="button" class="link" id="resend-otp">Send a new code</button>
+        </form>
+      </section>
+
+      <!-- 3. Household -->
+      <section id="view-home" class="view" hidden>
+        <div class="home-head">
+          <h2>People registered under <span id="home-mobile"></span></h2>
+          <button type="button" class="link" id="sign-out">Sign out</button>
+        </div>
+
+        <ol id="slots" class="slots" aria-label="Registration slots for this mobile number"></ol>
+        <p id="slots-caption" class="help"></p>
+
+        <form id="form-person" novalidate>
+          <h3>Add a person</h3>
+          <div class="grid">
+            <div class="field wide">
+              <label for="full_name">Full name, as on the photo ID</label>
+              <input id="full_name" name="full_name" maxlength="100" autocomplete="name" required>
+            </div>
+            <div class="field">
+              <label for="birth_year">Year of birth</label>
+              <input id="birth_year" name="birth_year" inputmode="numeric" maxlength="4" placeholder="1985" required>
+            </div>
+            <fieldset class="field">
+              <legend>Gender</legend>
+              <div class="choices">
+                <label><input type="radio" name="gender" value="FEMALE" required> Female</label>
+                <label><input type="radio" name="gender" value="MALE"> Male</label>
+                <label><input type="radio" name="gender" value="OTHER"> Other</label>
+              </div>
+            </fieldset>
+            <div class="field">
+              <label for="photo_id_type">Photo ID</label>
+              <select id="photo_id_type" name="photo_id_type" required>
+                <option value="">Choose one</option>
+                <option value="AADHAAR">Aadhaar card</option>
+                <option value="DRIVING_LICENSE">Driving licence</option>
+                <option value="PAN">PAN card</option>
+                <option value="PASSPORT">Passport</option>
+                <option value="PENSION_PASSBOOK">Pension passbook</option>
+                <option value="NPR_SMART_CARD">NPR smart card</option>
+                <option value="VOTER_ID">Voter ID (EPIC)</option>
+                <option value="UDID">Unique disability ID (UDID)</option>
+                <option value="RATION_CARD">Ration card with photo</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="photo_id_number">ID number</label>
+              <input id="photo_id_number" name="photo_id_number" maxlength="40" autocomplete="off"
+                     spellcheck="false" placeholder="Made-up, e.g. TEST1234" required>
+            </div>
+          </div>
+          <p id="person-error" class="error" hidden></p>
+          <button type="submit" class="primary" id="add-person">Add person</button>
+        </form>
+        <p id="full-note" class="full-note" hidden>All four slots are used. A mobile number can register at most four people.</p>
+      </section>
+
+      <p id="toast" class="toast" role="status" hidden></p>
+    </main>
+  </div>
+
+  <footer class="foot">
+    <span>IT457 case study: CoWIN registration module</span>
+    <span id="served-by"></span>
+    <a href="/docs">API reference</a>
+  </footer>
+</body>
+</html>

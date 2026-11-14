@@ -300,7 +300,7 @@ Options: `?target=/centers` polls another path; the dropdown changes the rate (1
 Evidence for `docs/evidence/`: `07-monitor.png`, the page after a minute of normal traffic,
 showing both zones and 0 failed.
 
-##  Zone A shutdown test (E5)
+## Commit 8: Zone A shutdown test (E5)
 
 The proof for Step 5: while the live site is being used, stop the server in Zone A and
 measure what users see.
@@ -346,10 +346,80 @@ Report both: the difference is what health checks and connection draining are fo
 Settings: `DURATION=300 KILL_AT=120 RATE=10 ./infra/aws/08_failover_test.sh hard`.
 `SKIP_RESTORE=1` leaves server-a stopped.
 
-### How this was tested
+### How commit 8 was tested
 
 The full script ran on the moto emulator, with the prober pointed at a local stand-in load
 balancer and the zone A app copy really killed at the stop moment. Hard mode gave
 4 failed requests with a 0.4 s worst gap (PASS). Graceful mode gave 0 failed (PASS). A
 synthetic 8 s blackout was reported as FAIL. Those test outputs are not in the repo: only
 real AWS runs belong in `docs/evidence/`.
+
+## Commit 10: CloudWatch dashboard and alarms
+
+AWS's own view of the load balancer, next to the probe's view from commit 8.
+
+```bash
+./infra/aws/10_monitoring.sh
+./infra/aws/verify_monitoring.sh | tee docs/evidence/10-verify-monitoring.txt
+```
+
+**Dashboard `cowin-it457`** (CloudWatch console, *Dashboards*; the script prints the link):
+
+| Graph | Shows |
+| --- | --- |
+| Healthy servers per zone | 1 per zone normally; zone A drops to 0 when it is stopped |
+| Requests per zone | The load balancer's even split, then all traffic on zone B |
+| Errors per minute | 5xx from the load balancer (server unreachable) vs from the app |
+| Response time | Median and 99th percentile |
+| Server CPU | Per server |
+| Alarms | Current state of the four alarms |
+
+**Alarms** (1-minute periods):
+
+| Alarm | Fires when |
+| --- | --- |
+| `cowin-it457-healthy-hosts-low` | Fewer than 2 healthy servers |
+| `cowin-it457-zone-a-down` | No healthy server in ap-south-1a |
+| `cowin-it457-zone-b-down` | No healthy server in ap-south-1b |
+| `cowin-it457-elb-5xx` | 5 or more load balancer 5xx errors in a minute |
+
+To also get an email: `ALARM_EMAIL=you@example.com ./infra/aws/10_monitoring.sh`, then click the
+confirmation link AWS sends. This needs `AmazonSNSFullAccess` on your IAM user as well.
+
+Load balancer metrics arrive once a minute, so right after setup the alarms show
+`INSUFFICIENT_DATA` and `verify_monitoring.sh` asks you to wait 2-3 minutes. Rerun
+`10_monitoring.sh` after replacing the servers, so the CPU graph follows the new ones.
+
+### Graphs of a failover run
+
+```bash
+./infra/aws/export_graphs.sh --run docs/evidence/08-failover-<run>
+```
+
+This saves three PNGs into that run's folder, straight from CloudWatch:
+`10-<mode>-healthy-hosts.png`, `10-<mode>-requests.png` and `10-<mode>-errors.png`. Each covers 3
+minutes before to 7 minutes after the run, with red lines where zone A was removed and stopped.
+CloudWatch keeps these metrics for 15 days, so runs that are already done can be exported too,
+as long as the load balancer has not been deleted and recreated since.
+
+Without `--run`, it exports the last 30 minutes into `docs/evidence/`.
+
+### Evidence for `docs/evidence/` (part of commit 10)
+
+- [ ] `10-verify-monitoring.txt`
+- [ ] The three exported PNGs for the hard run and the graceful run (inside their `08-failover-*` folders)
+- [ ] `10-dashboard.png`: a screenshot of the whole dashboard during or just after a failover run
+- [ ] `10-alarm.png`: the `zone-a-down` alarm in *In alarm* during a hard stop (*Alarms* page)
+
+### Cost
+
+Dashboards and alarms are billed per month, prorated, and a few cents for this setup.
+Remove them with `./infra/aws/96_teardown_monitoring.sh` (run it before `97`).
+
+### How commit 10 was tested
+
+On the moto emulator: alarms and dashboard created, re-run without duplicates, the email topic
+and alarm actions, every `verify_monitoring.sh` check (failing with no metrics yet, passing
+after metric data was added), and teardown. The graph definitions were checked against
+CloudWatch's widget format and a sample failover run (time window and red markers correct).
+The emulator cannot draw graph images, so `export_graphs.sh` is only proven on the real account.

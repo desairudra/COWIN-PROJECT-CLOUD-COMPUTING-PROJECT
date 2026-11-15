@@ -75,6 +75,21 @@ The load balancer and the servers are billed every hour, even with no traffic.
 
 Check in the EC2 console that no `cowin-it457` instances or load balancers remain.
 
+## The same setup with one command (commit 15)
+
+Instead of the build and tear-down steps above, CloudFormation can build everything at once, with
+an Auto Scaling group in place of the two hand-made servers (details in
+[`infra/cfn/README.md`](../infra/cfn/README.md)):
+
+```bash
+./infra/cfn/stack.sh up          # about 8 minutes, ends with the live URL
+./infra/cfn/replace_test.sh      # stop a server, watch the group replace it (8 minutes)
+./infra/cfn/stack.sh down        # delete everything (about 5 minutes)
+```
+
+For the viva this is the quickest way to show the system: one command builds it, the
+replacement test shows a dead server coming back on its own, one command removes it.
+
 ## When something goes wrong
 
 | Symptom | Fix |

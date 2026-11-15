@@ -78,3 +78,11 @@ def test_slow_answers_are_counted(tmp_path):
 def test_long_outage_verdict():
     s = {"failed": 50, "max_gap": 12.3}
     assert analyze.verdict(s) == "Outage of 12.3 s"
+
+
+def test_nothing_answered_is_an_outage(tmp_path):
+    run = make_run(tmp_path, fail_window=(0, 60))
+    env, probe, pods, events, zones = analyze.load(run)
+    s = analyze.summarize(env, probe, pods, events, zones)
+    assert s["ok"] == 0 and s["max_gap"] > 59
+    assert analyze.verdict(s).startswith("Outage")

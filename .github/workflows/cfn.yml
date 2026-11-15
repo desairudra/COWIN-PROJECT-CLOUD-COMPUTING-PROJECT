@@ -1,0 +1,32 @@
+name: cfn
+
+on:
+  workflow_dispatch:
+  push:
+    paths: ["infra/cfn/**", "infra/aws/user-data.sh", "infra/aws/05_servers.sh", "lookup/app/**", ".github/workflows/cfn.yml"]
+  pull_request:
+    paths: ["infra/cfn/**", "infra/aws/user-data.sh", "infra/aws/05_servers.sh", "lookup/app/**", ".github/workflows/cfn.yml"]
+
+jobs:
+  template:
+    runs-on: ubuntu-24.04
+    env:
+      AWS_ACCESS_KEY_ID: testing
+      AWS_SECRET_ACCESS_KEY: testing
+      AWS_REGION: ap-south-1
+      AWS_DEFAULT_REGION: ap-south-1
+      AWS_ENDPOINT_URL: http://localhost:5000
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install cfn-lint "moto[server]"
+      - run: cfn-lint infra/cfn/cowin-stack.yaml
+      - name: Build the stack in a local AWS emulator (moto)
+        run: |
+          moto_server -p 5000 &
+          sleep 3
+          ./infra/cfn/stack.sh up
+          cfn-lint infra/aws/.state/cowin-stack.rendered.yaml
+          ./infra/cfn/stack.sh status

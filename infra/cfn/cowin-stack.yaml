@@ -1,0 +1,245 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: >
+  CoWIN IT457 (commit 15): the whole AWS setup from commits 4-6 in one stack. VPC with a public
+  subnet in two Availability Zones, an ALB, and an Auto Scaling group that keeps at least two
+  lookup servers running, one per zone. Deploy with infra/cfn/stack.sh up, which puts the app
+  into the startup script (the __USER_DATA__ line below) before handing the template to AWS.
+
+Parameters:
+  Project:
+    Type: String
+    Default: cowin-cfn
+    Description: Prefix for names and tags
+  AzA:
+    Type: AWS::EC2::AvailabilityZone::Name
+    Default: ap-south-1a
+  AzB:
+    Type: AWS::EC2::AvailabilityZone::Name
+    Default: ap-south-1b
+  InstanceType:
+    Type: String
+    Default: t3.micro
+    AllowedValues: [t3.micro, t3.small, t2.micro]
+  MinSize:
+    Type: Number
+    Default: 2
+    MinValue: 2
+  MaxSize:
+    Type: Number
+    Default: 4
+  CpuTarget:
+    Type: Number
+    Default: 50
+    Description: Average CPU % the group scales to keep
+  ImageId:
+    Type: AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>
+    Default: /aws/service/ami-amazon-linux-latest/al2023-ami-kernel-default-x86_64
+
+Resources:
+  Vpc:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: 10.1.0.0/16
+      EnableDnsSupport: true
+      EnableDnsHostnames: true
+      Tags:
+        - {Key: Name, Value: !Sub "${Project}-vpc"}
+        - {Key: Project, Value: !Ref Project}
+
+  InternetGateway:
+    Type: AWS::EC2::InternetGateway
+    Properties:
+      Tags:
+        - {Key: Name, Value: !Sub "${Project}-igw"}
+        - {Key: Project, Value: !Ref Project}
+
+  GatewayAttachment:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      VpcId: !Ref Vpc
+      InternetGatewayId: !Ref InternetGateway
+
+  SubnetA:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref Vpc
+      AvailabilityZone: !Ref AzA
+      CidrBlock: 10.1.1.0/24
+      MapPublicIpOnLaunch: true
+      Tags:
+        - {Key: Name, Value: !Sub "${Project}-subnet-a"}
+        - {Key: Project, Value: !Ref Project}
+
+  SubnetB:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref Vpc
+      AvailabilityZone: !Ref AzB
+      CidrBlock: 10.1.2.0/24
+      MapPublicIpOnLaunch: true
+      Tags:
+        - {Key: Name, Value: !Sub "${Project}-subnet-b"}
+        - {Key: Project, Value: !Ref Project}
+
+  RouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref Vpc
+      Tags:
+        - {Key: Name, Value: !Sub "${Project}-rt"}
+        - {Key: Project, Value: !Ref Project}
+
+  DefaultRoute:
+    Type: AWS::EC2::Route
+    DependsOn: GatewayAttachment
+    Properties:
+      RouteTableId: !Ref RouteTable
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref InternetGateway
+
+  SubnetARoutes:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref SubnetA
+      RouteTableId: !Ref RouteTable
+
+  SubnetBRoutes:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref SubnetB
+      RouteTableId: !Ref RouteTable
+
+  AlbSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Load balancer, port 80 from anywhere
+      VpcId: !Ref Vpc
+      SecurityGroupIngress:
+        - {IpProtocol: tcp, FromPort: 80, ToPort: 80, CidrIp: 0.0.0.0/0}
+      Tags:
+        - {Key: Name, Value: !Sub "${Project}-alb"}
+        - {Key: Project, Value: !Ref Project}
+
+  AppSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Lookup servers, port 8000 from the load balancer only
+      VpcId: !Ref Vpc
+      SecurityGroupIngress:
+        - {IpProtocol: tcp, FromPort: 8000, ToPort: 8000, SourceSecurityGroupId: !Ref AlbSecurityGroup}
+      Tags:
+        - {Key: Name, Value: !Sub "${Project}-app"}
+        - {Key: Project, Value: !Ref Project}
+
+  LaunchTemplate:
+    Type: AWS::EC2::LaunchTemplate
+    Properties:
+      LaunchTemplateName: !Sub "${Project}-lookup"
+      LaunchTemplateData:
+        ImageId: !Ref ImageId
+        InstanceType: !Ref InstanceType
+        SecurityGroupIds: [!Ref AppSecurityGroup]
+        MetadataOptions:
+          HttpTokens: required
+          HttpEndpoint: enabled
+        TagSpecifications:
+          - ResourceType: instance
+            Tags:
+              - {Key: Name, Value: !Sub "${Project}-lookup"}
+              - {Key: Project, Value: !Ref Project}
+        UserData:
+          Fn::Base64: |
+            __USER_DATA__
+
+  TargetGroup:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    Properties:
+      Name: !Sub "${Project}-tg"
+      VpcId: !Ref Vpc
+      Protocol: HTTP
+      Port: 8000
+      TargetType: instance
+      HealthCheckPath: /health
+      HealthCheckIntervalSeconds: 5
+      HealthCheckTimeoutSeconds: 2
+      HealthyThresholdCount: 2
+      UnhealthyThresholdCount: 2
+      TargetGroupAttributes:
+        - {Key: deregistration_delay.timeout_seconds, Value: "10"}
+      Tags:
+        - {Key: Project, Value: !Ref Project}
+
+  LoadBalancer:
+    Type: AWS::ElasticLoadBalancingV2::LoadBalancer
+    DependsOn: GatewayAttachment
+    Properties:
+      Name: !Sub "${Project}-alb"
+      Scheme: internet-facing
+      Type: application
+      Subnets: [!Ref SubnetA, !Ref SubnetB]
+      SecurityGroups: [!Ref AlbSecurityGroup]
+      Tags:
+        - {Key: Project, Value: !Ref Project}
+
+  Listener:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    Properties:
+      LoadBalancerArn: !Ref LoadBalancer
+      Port: 80
+      Protocol: HTTP
+      DefaultActions:
+        - {Type: forward, TargetGroupArn: !Ref TargetGroup}
+
+  AutoScalingGroup:
+    Type: AWS::AutoScaling::AutoScalingGroup
+    DependsOn: [DefaultRoute, SubnetARoutes, SubnetBRoutes]
+    Properties:
+      AutoScalingGroupName: !Sub "${Project}-asg"
+      VPCZoneIdentifier: [!Ref SubnetA, !Ref SubnetB]
+      LaunchTemplate:
+        LaunchTemplateId: !Ref LaunchTemplate
+        Version: !GetAtt LaunchTemplate.LatestVersionNumber
+      MinSize: !Ref MinSize
+      MaxSize: !Ref MaxSize
+      DesiredCapacity: !Ref MinSize
+      TargetGroupARNs: [!Ref TargetGroup]
+      HealthCheckType: ELB
+      HealthCheckGracePeriod: 180
+      DefaultInstanceWarmup: 180
+      MetricsCollection:
+        - Granularity: 1Minute
+      Tags:
+        - {Key: Project, Value: !Ref Project, PropagateAtLaunch: true}
+    UpdatePolicy:
+      AutoScalingRollingUpdate:
+        MinInstancesInService: 1
+        MaxBatchSize: 1
+        PauseTime: PT3M
+
+  CpuScaling:
+    Type: AWS::AutoScaling::ScalingPolicy
+    Properties:
+      AutoScalingGroupName: !Ref AutoScalingGroup
+      PolicyType: TargetTrackingScaling
+      TargetTrackingConfiguration:
+        PredefinedMetricSpecification:
+          PredefinedMetricType: ASGAverageCPUUtilization
+        TargetValue: !Ref CpuTarget
+
+Outputs:
+  Url:
+    Description: Live URL
+    Value: !Sub "http://${LoadBalancer.DNSName}/centers"
+  AlbDns:
+    Value: !GetAtt LoadBalancer.DNSName
+  AlbDimension:
+    Description: LoadBalancer dimension for CloudWatch
+    Value: !GetAtt LoadBalancer.LoadBalancerFullName
+  TargetGroupArn:
+    Value: !Ref TargetGroup
+  TargetGroupDimension:
+    Value: !GetAtt TargetGroup.TargetGroupFullName
+  AutoScalingGroup:
+    Value: !Ref AutoScalingGroup
+  VpcId:
+    Value: !Ref Vpc

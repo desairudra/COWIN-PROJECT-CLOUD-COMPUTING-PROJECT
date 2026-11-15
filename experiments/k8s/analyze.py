@@ -51,7 +51,7 @@ def load(run):
 
 def node_label(node, zones):
     z = zones.get(node, "")
-    return f"{node} ({z})" if z and z != "-" else (node or "?")
+    return f"{node} ({z})" if z and z not in ("-", node) else (node or "?")
 
 
 def ready_series(pods, key, zones):
@@ -69,7 +69,7 @@ def summarize(env, probe, pods, events, zones):
     s["failed"] = s["total"] - s["ok"]
     s["slow"] = sum(r["ok"] and r["ms"] >= SLOW_MS for r in probe)
     s["availability"] = s["ok"] / s["total"] if s["total"] else 0.0
-    ok_t = [r["t"] for r in probe if r["ok"]]
+    ok_t = [probe[0]["t"]] + [r["t"] for r in probe if r["ok"]] + [probe[-1]["t"]] if probe else []
     gaps = [(b - a, a) for a, b in zip(ok_t, ok_t[1:])]
     s["max_gap"], s["gap_at"] = max(gaps, default=(0.0, 0.0))
     s["errors"] = Counter(r["error"] or f"HTTP {r['status']}" for r in probe if not r["ok"])
@@ -123,9 +123,10 @@ def fmt(v, unit=" s"):
 
 
 def write_results(run, env, s, events):
+    unit = env.get("UNIT", "lookup pods")
     lines = [f"# {env.get('TITLE', 'Experiment')}", "",
              f"Probe: {env.get('RATE')} requests a second for {env.get('DURATION')} s to `{env.get('URL')}`, "
-             f"{env.get('PODS')} lookup pods to start with.", "",
+             f"{env.get('PODS')} {unit} to start with.", "",
              f"**{verdict(s)}.** {s['ok']} of {s['total']} requests answered "
              f"({s['availability']:.2%}); the longest stretch with no successful answer was "
              f"{s['max_gap']:.2f} s (at t = {s['gap_at']:.0f} s).", "",
@@ -143,14 +144,14 @@ def write_results(run, env, s, events):
         lines += [f"| Failure types | {', '.join(f'{k}: {v}' for k, v in s['errors'].most_common())} |"]
     lines.append("")
     if s["recoveries"]:
-        lines += ["| Event | At | Ready pods before | Back to that many after | Failed in the next 30 s |",
+        lines += [f"| Event | At | Ready {unit} before | Back to that many after | Failed in the next 30 s |",
                   "| --- | --- | --- | --- | --- |"]
         for r in s["recoveries"]:
             lines.append(f"| {r['event']} | {r['t']:.1f} s | {r['pods_before'] or '-'} | {fmt(r['back_after'])} | "
                          f"{r['failed_30s']} of {r['n_30s']} |")
         lines.append("")
     if s.get("by_group"):
-        lines += ["Answers by node: " + ", ".join(f"{k} {v}" for k, v in sorted(s["by_group"].items())), ""]
+        lines += [f"Answers by {env.get('GROUP_LABEL', 'node')}: " + ", ".join(f"{k} {v}" for k, v in sorted(s["by_group"].items())), ""]
     lines += ["![timeline](timeline.svg)", "",
               "Raw data: `probe.csv` (every request), `pods.csv` (lookup pods every second), `events.csv`, `nodes.csv`.", ""]
     (run / "results.md").write_text("\n".join(lines))
@@ -227,9 +228,10 @@ def write_svg(run, env, s, probe, pods, events, zones):
     stacked(0, "Requests each second", plain, [0, 1, 2], {0: "#0b8a6f", 1: "#d68a00", 2: "#c0362c"},
             nice(rate * 1.2), [("answered", "#0b8a6f"), (f"answered, over {SLOW_MS} ms", "#d68a00"), ("failed", "#c0362c")])
     most = max([sum(c.values()) for c in ready.values()] + [1])
-    stacked(1, "Ready lookup pods, by " + ("release" if group == "release" else "node"), ready, groups, color,
+    by = env.get("GROUP_LABEL", "release" if group == "release" else "node")
+    stacked(1, f"Ready {env.get('UNIT', 'lookup pods')}, by {by}", ready, groups, color,
             most + 2 - most % 2, [(g, color[g]) for g in groups])
-    stacked(2, "Who answered, by " + ("release" if group == "release" else "node"), answers, groups, color,
+    stacked(2, f"Who answered, by {by}", answers, groups, color,
             nice(rate * 1.2), [(g, color[g]) for g in groups])
 
     top = T

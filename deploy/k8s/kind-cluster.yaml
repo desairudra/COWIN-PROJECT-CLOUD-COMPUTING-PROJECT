@@ -1,0 +1,21 @@
+# One control plane and two workers, labelled as the two Mumbai zones like the AWS setup.
+# Port 8080 on your machine goes to the nginx front door (NodePort 30080).
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+name: cowin
+nodes:
+  - role: control-plane
+  - role: worker
+    labels:
+      topology.kubernetes.io/zone: ap-south-1a
+    extraPortMappings:
+      - containerPort: 30080
+        hostPort: 8080
+        listenAddress: "127.0.0.1"
+  - role: worker
+    labels:
+      topology.kubernetes.io/zone: ap-south-1b
+    extraPortMappings:
+      - containerPort: 30080
+        hostPort: 8081
+        listenAddress: "127.0.0.1"

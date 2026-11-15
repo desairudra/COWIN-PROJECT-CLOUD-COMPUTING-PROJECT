@@ -1,0 +1,8 @@
+{"start": "2026-11-01", "end": "2026-11-15", "file": "17-bill-manual.json",
+ "services": [
+  {"service": "Amazon Elastic Compute Cloud - Compute", "usd": 0.00},
+  {"service": "Elastic Load Balancing", "usd": 0.00},
+  {"service": "Amazon Virtual Private Cloud", "usd": 0.00},
+  {"service": "AmazonCloudWatch", "usd": 0.00},
+  {"service": "Tax", "usd": 0.00}
+ ]}

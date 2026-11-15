@@ -76,7 +76,6 @@ we built one region of it.
 | --- | --- | --- |
 | [`db/`](db/README.md) | PostgreSQL schema for the registration module: max 4 per mobile, unique photo ID, idempotent retries, hash partitioning; 42 tests | 1 |
 | [`docs/architecture/`](docs/architecture/README.md) | National-scale multi-region design and diagram | 2 |
-| [`docs/report/`](docs/report/) | Report section drafts | 2 |
 | [`lookup/`](lookup/README.md) | Vaccine Center Lookup service and `/monitor` page; 27 tests | 3, 7 |
 | [`infra/aws/`](infra/aws/README.md) | AWS CLI scripts: network, servers, load balancer, failover test, verification and teardown | 4-8 |
 | [`docs/evidence/`](docs/evidence/README.md) | Command output, screenshots and test results from the real AWS account, by commit | 4-8 |
@@ -87,6 +86,7 @@ we built one region of it.
 | [`infra/cfn/`](infra/cfn/README.md) | The whole AWS setup as one CloudFormation stack, with an Auto Scaling group that replaces failed servers | 15 |
 | [`experiments/e6_shard/`](experiments/e6_shard/README.md) | Registrations split over several databases by mobile number, and E6: one table vs partitioned vs sharded | 16 |
 | [`docs/cost/`](docs/cost/README.md) | Cost model for 475-741 registrations/s, cloud vs on-premises, our real AWS bill; writes report Sec 6 | 17 |
+| [`docs/report/`](docs/report/README.md) | Report text: background, solution overview, design, cost, outcomes and lessons with every measured result | 2, 17, 18 |
 
 ## Run it locally
 

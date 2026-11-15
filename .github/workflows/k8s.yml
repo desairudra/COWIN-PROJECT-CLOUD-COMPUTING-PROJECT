@@ -39,7 +39,7 @@ jobs:
           tok=$(curl -sf -X POST localhost:8090/api/v1/otp/verify -H 'Content-Type: application/json' \
                 -d "{\"txn_id\":\"$txn\",\"otp\":\"$otp\"}" | jq -r .token)
           curl -sf -X POST localhost:8090/api/v1/beneficiaries -H "Authorization: Bearer $tok" -H 'Content-Type: application/json' \
-               -H 'Idempotency-Key: ci-1' -d '{"full_name":"CI Test","birth_year":1980,"gender":"MALE","photo_id_type":"PAN","photo_id_number":"CIPAN0001"}'
+               -H 'Idempotency-Key: ci-test-0001' -d '{"full_name":"CI Test","birth_year":1980,"gender":"MALE","photo_id_type":"PAN","photo_id_number":"CIPAN0001"}'
           curl -sf localhost:8090/api/v1/beneficiaries -H "Authorization: Bearer $tok" | jq -e '.count == 1'
       - if: failure()
         run: docker compose -f deploy/compose/docker-compose.yml logs --tail 50
@@ -53,15 +53,19 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - uses: helm/kind-action@v1
+      - uses: actions/setup-go@v5
         with:
-          cluster_name: cowin
-          config: deploy/k8s/kind-cluster.yaml
-      - run: ./deploy/k8s/up.sh
+          go-version: stable
+      - name: Install kind
+        run: |
+          go install sigs.k8s.io/kind@latest
+          echo "$(go env GOPATH)/bin" >> "$GITHUB_PATH"
+      - run: kind version && kubectl version --client
+      - run: bash deploy/k8s/up.sh
       - name: E3 rolling update under traffic
-        run: ./experiments/e3_rollout/run_e3.sh rolling
+        run: bash experiments/e3_rollout/run_e3.sh rolling
       - name: E2 pods killed under traffic
-        run: ./experiments/e2_self_heal/run_e2.sh pods
+        run: bash experiments/e2_self_heal/run_e2.sh pods
       - if: always()
         run: kubectl -n cowin get pods,hpa -o wide
       - uses: actions/upload-artifact@v4

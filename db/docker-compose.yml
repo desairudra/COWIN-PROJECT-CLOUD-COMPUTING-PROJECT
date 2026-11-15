@@ -1,6 +1,6 @@
 # Local PostgreSQL (and Redis, from commit 12) for developing and testing the registration module.
-# The full stack (service, Redis, NGINX, kind) comes in commit 5; this file
-# only gives everyone the same database to work against.
+# The full stack (nginx, service, lookup, Redis) is deploy/compose/docker-compose.yml 
+# this file only gives everyone the same database to work against.
 #
 #   docker compose -f db/docker-compose.yml up -d
 #   docker compose -f db/docker-compose.yml exec db createdb -U cowin cowin_test

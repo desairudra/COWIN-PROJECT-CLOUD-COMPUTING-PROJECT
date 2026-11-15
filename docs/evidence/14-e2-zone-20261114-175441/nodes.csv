@@ -1,0 +1,4 @@
+node,zone
+cowin-control-plane,-
+cowin-worker,ap-south-1a
+cowin-worker2,ap-south-1b

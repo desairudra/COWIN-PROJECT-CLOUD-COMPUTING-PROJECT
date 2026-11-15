@@ -1,4 +1,4 @@
-// Frontend for the IT457 CoWIN registration model. Plain JS, no build step.
+// Frontend for the IT457 CoWIN registration model.
 // Talks to the registration service (service/app/main.py).
 "use strict";
 
@@ -17,18 +17,18 @@ const state = { mobile: null, txnId: null, token: null, otpExpires: 0, timer: nu
 // ---------- storage (session only; a page refresh keeps you signed in) -------
 const store = {
   save() {
-    try { sessionStorage.setItem("cowin.session", JSON.stringify({ mobile: state.mobile, token: state.token })); } catch (_) {}
+    try { sessionStorage.setItem("cowin.session", JSON.stringify({ mobile: state.mobile, token: state.token })); } catch (_) { }
   },
   load() {
     try { return JSON.parse(sessionStorage.getItem("cowin.session") || "null"); } catch (_) { return null; }
   },
   clear() {
-    try { sessionStorage.removeItem("cowin.session"); } catch (_) {}
+    try { sessionStorage.removeItem("cowin.session"); } catch (_) { }
   },
 };
 
 // ---------- API -----------------------------------------------------------------
-class NetworkError extends Error {}
+class NetworkError extends Error { }
 
 async function api(path, { method = "GET", body, headers = {} } = {}) {
   const h = { ...headers };
@@ -43,7 +43,7 @@ async function api(path, { method = "GET", body, headers = {} } = {}) {
   const servedBy = res.headers.get("X-Served-By");
   if (servedBy) $("served-by").textContent = `Answered by replica ${servedBy}`;
   let data = null;
-  try { data = await res.json(); } catch (_) {}
+  try { data = await res.json(); } catch (_) { }
   return { status: res.status, ok: res.ok, data, headers: res.headers };
 }
 
@@ -57,8 +57,10 @@ function errorText(r) {
 }
 
 function fieldName(f) {
-  return ({ mobile: "Mobile number", otp: "Code", full_name: "Name", birth_year: "Year of birth",
-            gender: "Gender", photo_id_type: "Photo ID", photo_id_number: "ID number" })[f] || f;
+  return ({
+    mobile: "Mobile number", otp: "Code", full_name: "Name", birth_year: "Year of birth",
+    gender: "Gender", photo_id_type: "Photo ID", photo_id_number: "ID number"
+  })[f] || f;
 }
 
 function newKey() {
@@ -294,7 +296,7 @@ $("form-person").addEventListener("submit", async (e) => {
     f.reset();
     await refresh(r.data.beneficiary_id);
     toast(replay ? `${body.full_name} was already added. Your retry didn't create a duplicate.`
-                 : `${body.full_name} added.`);
+      : `${body.full_name} added.`);
   } catch (err) {
     if (err instanceof NetworkError) {
       setError("person-error", "Couldn't reach the server. Press Add person again; you won't be added twice.");

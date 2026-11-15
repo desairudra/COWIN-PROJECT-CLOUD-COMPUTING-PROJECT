@@ -18,7 +18,7 @@ from datetime import datetime, timezone
 
 def one_request(url, timeout):
     started = time.monotonic()
-    status, zone, instance, error = 0, "", "", ""
+    status, zone, instance, release, error = 0, "", "", "", ""
     try:
         req = urllib.request.Request(url, headers={"Cache-Control": "no-cache"})
         with urllib.request.urlopen(req, timeout=timeout) as resp:
@@ -26,11 +26,12 @@ def one_request(url, timeout):
             status = resp.status
             zone = resp.headers.get("X-Availability-Zone", "")
             instance = resp.headers.get("X-Instance-Id", "")
+            release = resp.headers.get("X-App-Release", "")
     except urllib.error.HTTPError as e:
         status = e.code
     except Exception as e:
         error = type(e).__name__
-    return status, zone, instance, round((time.monotonic() - started) * 1000), error
+    return status, zone, instance, round((time.monotonic() - started) * 1000), error, release
 
 
 def main():
@@ -45,14 +46,14 @@ def main():
     lock = threading.Lock()
     out = open(args.out, "w", newline="")
     writer = csv.writer(out)
-    writer.writerow(["n", "t_s", "time_utc", "status", "zone", "instance", "ms", "error"])
+    writer.writerow(["n", "t_s", "time_utc", "status", "zone", "instance", "ms", "error", "release"])
     t0 = time.monotonic()
 
     def run(n, scheduled):
         sent_at = datetime.now(timezone.utc).isoformat(timespec="milliseconds")
-        status, zone, instance, ms, error = one_request(args.url, args.timeout)
+        status, zone, instance, ms, error, release = one_request(args.url, args.timeout)
         with lock:
-            writer.writerow([n, f"{scheduled:.3f}", sent_at, status, zone, instance, ms, error])
+            writer.writerow([n, f"{scheduled:.3f}", sent_at, status, zone, instance, ms, error, release])
 
     total = int(args.duration * args.rate)
     with ThreadPoolExecutor(max_workers=int(args.rate * args.timeout) + 4) as pool:

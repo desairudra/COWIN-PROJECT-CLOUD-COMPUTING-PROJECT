@@ -184,3 +184,16 @@ def test_monitor_page_is_served(client):
 
 def test_info_lists_monitor(client):
     assert "/monitor" in client.get("/").json()["endpoints"]
+
+
+def test_release_header_defaults_to_v1(client):
+    r = client.get("/health")
+    assert r.headers["X-App-Release"] == "v1"
+    assert client.get("/").json()["release"] == "v1"
+
+
+def test_detect_zone_only_uses_hostname(monkeypatch):
+    monkeypatch.delenv("SERVED_BY_INSTANCE", raising=False)
+    monkeypatch.setenv("SERVED_BY_AZ", "compose")
+    info = instance.detect()
+    assert info["instance_id"] == info["hostname"] and info["availability_zone"] == "compose"

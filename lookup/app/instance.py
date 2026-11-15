@@ -46,7 +46,7 @@ def detect() -> Dict[str, str]:
         "source": "fallback",
     }
     if os.environ.get("SERVED_BY_INSTANCE") or os.environ.get("SERVED_BY_AZ"):
-        info["instance_id"] = os.environ.get("SERVED_BY_INSTANCE", "local")
+        info["instance_id"] = os.environ.get("SERVED_BY_INSTANCE", info["hostname"])
         info["availability_zone"] = os.environ.get("SERVED_BY_AZ", "local")
         info["region"] = info["availability_zone"][:-1] if info["availability_zone"] != "local" else "local"
         info["source"] = "env"

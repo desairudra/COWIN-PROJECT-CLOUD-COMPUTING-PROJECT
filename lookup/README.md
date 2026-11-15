@@ -1,9 +1,5 @@
-# Vaccine Center Lookup microservice (commit 3)
+# Vaccine Center Lookup microservice 
 
-Step 2 of the TA brief: a very simple microservice that returns static JSON. It lists 20
-made-up vaccination centres, 10 in Mumbai and 10 in Hyderabad. Commits 5 to 8 deploy it on
-two EC2 servers in two Availability Zones, put a load balancer in front, and shut one zone
-down to test failover.
 
 | Endpoint | Returns |
 | --- | --- |

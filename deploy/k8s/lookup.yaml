@@ -1,0 +1,113 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: cowin
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: lookup
+  namespace: cowin
+  labels: {app: lookup}
+spec:
+  replicas: 2
+  revisionHistoryLimit: 3
+  selector:
+    matchLabels: {app: lookup}
+  strategy:
+    type: RollingUpdate
+    rollingUpdate: {maxSurge: 1, maxUnavailable: 0}
+  template:
+    metadata:
+      labels: {app: lookup}
+    spec:
+      terminationGracePeriodSeconds: 20
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: topology.kubernetes.io/zone
+          whenUnsatisfiable: DoNotSchedule
+          nodeTaintsPolicy: Honor
+          matchLabelKeys: [pod-template-hash]
+          labelSelector:
+            matchLabels: {app: lookup}
+      tolerations:
+        - {key: node.kubernetes.io/unreachable, operator: Exists, effect: NoExecute, tolerationSeconds: 20}
+        - {key: node.kubernetes.io/not-ready, operator: Exists, effect: NoExecute, tolerationSeconds: 20}
+      containers:
+        - name: lookup
+          image: cowin/lookup:v1
+          imagePullPolicy: Never
+          ports:
+            - {name: http, containerPort: 8000}
+          env:
+            - name: DISABLE_IMDS
+              value: "1"
+            - name: APP_RELEASE
+              value: v1
+            - name: SERVED_BY_INSTANCE
+              valueFrom: {fieldRef: {fieldPath: metadata.name}}
+            - name: SERVED_BY_AZ
+              valueFrom: {fieldRef: {fieldPath: spec.nodeName}}
+          resources:
+            requests: {cpu: 100m, memory: 64Mi}
+            limits: {cpu: 250m, memory: 192Mi}
+          readinessProbe:
+            httpGet: {path: /health, port: http}
+            periodSeconds: 2
+            timeoutSeconds: 1
+            failureThreshold: 2
+          livenessProbe:
+            httpGet: {path: /health, port: http}
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 2
+            failureThreshold: 3
+          lifecycle:
+            preStop:
+              exec: {command: ["sleep", "5"]}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: lookup
+  namespace: cowin
+spec:
+  selector: {app: lookup}
+  ports:
+    - {name: http, port: 8000, targetPort: http}
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: lookup
+  namespace: cowin
+spec:
+  scaleTargetRef: {apiVersion: apps/v1, kind: Deployment, name: lookup}
+  minReplicas: 2
+  maxReplicas: 8
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target: {type: Utilization, averageUtilization: 50}
+  behavior:
+    scaleUp:
+      stabilizationWindowSeconds: 0
+      policies:
+        - {type: Percent, value: 100, periodSeconds: 15}
+        - {type: Pods, value: 2, periodSeconds: 15}
+      selectPolicy: Max
+    scaleDown:
+      stabilizationWindowSeconds: 60
+      policies:
+        - {type: Pods, value: 1, periodSeconds: 15}
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: lookup
+  namespace: cowin
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels: {app: lookup}

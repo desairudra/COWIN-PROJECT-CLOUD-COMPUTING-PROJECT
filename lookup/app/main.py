@@ -1,9 +1,9 @@
-"""Vaccine Center Lookup microservice (commit 3, Step 2 of the TA brief).
+"""Vaccine Center Lookup microservice .
 
 A deliberately small, stateless service that returns static JSON. Every
 response says which server and Availability Zone answered (`served_by`, plus
 X-Instance-Id / X-Availability-Zone headers), so the load balancer's spreading
-(commit 6) and the Zone A failover (commit 8) can be seen and measured.
+ and the Zone A failover  can be seen and measured.
 
     GET /                     service info
     GET /health               health check for the load balancer
@@ -18,6 +18,7 @@ Compatible with Python 3.9 (the default on Amazon Linux 2023), so no
 `X | None` type syntax here.
 """
 import json
+import os
 import pathlib
 import time
 from enum import Enum
@@ -32,6 +33,7 @@ from .instance import detect
 DATA_FILE = pathlib.Path(__file__).parent / "data" / "centers.json"
 MONITOR_PAGE = pathlib.Path(__file__).parent / "static" / "monitor.html"
 VERSION = "1.0.0"
+RELEASE = os.environ.get("APP_RELEASE", "v1")
 
 
 class City(str, Enum):
@@ -70,6 +72,7 @@ def create_app(served_by: Optional[Dict[str, str]] = None,
         response = await call_next(request)
         response.headers["X-Instance-Id"] = served_by["instance_id"]
         response.headers["X-Availability-Zone"] = served_by["availability_zone"]
+        response.headers["X-App-Release"] = RELEASE
         # Never let a browser or proxy cache an answer: during the failover
         # test every request must really reach a server.
         response.headers["Cache-Control"] = "no-store"
@@ -84,6 +87,7 @@ def create_app(served_by: Optional[Dict[str, str]] = None,
         return {
             "service": "vaccine-center-lookup",
             "version": VERSION,
+            "release": RELEASE,
             "endpoints": ["/health", "/centers", "/centers/{center_id}", "/monitor", "/docs"],
             "served_by": served_by,
         }

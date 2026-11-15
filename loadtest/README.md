@@ -1,4 +1,4 @@
-# Load tests 
+# Load tests (commit 13)
 
 k6 step tests: the load goes up in steps (for example 25, 50, 100, 200, 400 requests a second,
 60 s each) and we look for the first step where the service stops keeping up.

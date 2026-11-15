@@ -236,7 +236,7 @@ certificate in this project). It is saved in `.state/alb.env` and printed by `ve
 Try `/centers?city=Hyderabad`, `/centers/MUM-001`, `/health` and `/docs`, and refresh
 `/health` a few times to watch `availability_zone` change.
 
-### Evidence to save in `docs/evidence/` (part of commit 6)
+### Evidence to save in `docs/evidence/` 
 
 - [ ] `06-verify-alb.txt` and `06-distribution.txt`: the two outputs above
 - [ ] `06-alb.png`: EC2 console, *Load Balancers*, `cowin-it457-alb` *Active*, with its two Availability Zones
@@ -416,7 +416,7 @@ Without `--run`, it exports the last 30 minutes into `docs/evidence/`.
 Dashboards and alarms are billed per month, prorated, and a few cents for this setup.
 Remove them with `./infra/aws/96_teardown_monitoring.sh` (run it before `97`).
 
-### How commit 10 was tested
+### How this was tested
 
 On the moto emulator: alarms and dashboard created, re-run without duplicates, the email topic
 and alarm actions, every `verify_monitoring.sh` check (failing with no metrics yet, passing

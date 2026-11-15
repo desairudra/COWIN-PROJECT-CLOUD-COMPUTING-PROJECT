@@ -24,6 +24,8 @@ class Settings:
     app_env: str = field(default_factory=lambda: os.environ.get("APP_ENV", "dev"))
     database_url: str = field(default_factory=lambda: os.environ.get(
         "DATABASE_URL", "postgresql://cowin:cowin@localhost:5432/cowin"))
+    # Several databases, comma-separated, to split registrations by mobile number (commit 16).
+    database_urls: list[str] = field(default_factory=lambda: _list("DATABASE_URLS"))
     db_pool_min: int = field(default_factory=lambda: int(os.environ.get("DB_POOL_MIN", "1")))
     db_pool_max: int = field(default_factory=lambda: int(os.environ.get("DB_POOL_MAX", "10")))
 

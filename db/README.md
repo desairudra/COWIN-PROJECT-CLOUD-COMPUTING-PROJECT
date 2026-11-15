@@ -22,7 +22,8 @@ db/
 │   ├── 001_types_and_helpers.sql   enums (gender, 9 photo ID types), normalizers, partition helper
 │   ├── 002_tables.sql              registrations, beneficiaries, photo_id_registry (+ partitions)
 │   ├── 003_triggers.sql            limit of 4, photo ID claim, immutability, counter protection
-│   └── 004_functions.sql           upsert_registration, add_beneficiary, list_beneficiaries, partition_balance
+│   ├── 004_functions.sql           upsert_registration, add_beneficiary, list_beneficiaries, partition_balance
+│   └── 005_photo_id_claims.sql     claim/release a photo ID across several databases (commit 16)
 ├── scripts/
 │   ├── apply_migrations.sh   apply (or --reset and apply) to $DATABASE_URL
 │   └── seed.py               synthetic data and a partition balance report

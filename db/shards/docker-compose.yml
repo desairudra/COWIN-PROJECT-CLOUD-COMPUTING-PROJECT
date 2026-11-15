@@ -1,0 +1,35 @@
+# Four PostgreSQL servers for the sharding experiment (commit 16, E6).
+# Each gets one CPU, like four small database machines, so one server vs four is a fair fight.
+#
+#   docker compose -f db/shards/docker-compose.yml up -d --wait
+#   docker compose -f db/shards/docker-compose.yml down -v
+name: cowin-shards
+
+x-pg: &pg
+  image: postgres:16
+  environment:
+    POSTGRES_USER: cowin
+    POSTGRES_PASSWORD: cowin
+    POSTGRES_DB: cowin
+  cpus: 1.0
+  mem_limit: 1g
+  shm_size: 256m
+  healthcheck:
+    test: ["CMD-SHELL", "pg_isready -U cowin -d cowin"]
+    interval: 2s
+    timeout: 3s
+    retries: 30
+
+services:
+  shard1:
+    <<: *pg
+    ports: ["5441:5432"]
+  shard2:
+    <<: *pg
+    ports: ["5442:5432"]
+  shard3:
+    <<: *pg
+    ports: ["5443:5432"]
+  shard4:
+    <<: *pg
+    ports: ["5444:5432"]

@@ -1,4 +1,4 @@
-# Registration service (commit 2)
+# Registration service (commit 11)
 
 FastAPI service for our scaled-down CoWIN registration module (Week 2 report
 Sec 9.2, 9.4). It sits on the PostgreSQL schema from commit 1.
@@ -39,6 +39,7 @@ TEST_REDIS_URL=redis://localhost:6379/15 pytest -v      # 42 tests
 | Variable | Default | Meaning |
 |----------|---------|---------|
 | `DATABASE_URL` | `postgresql://cowin:cowin@localhost:5432/cowin` | PostgreSQL |
+| `DATABASE_URLS` | empty | two or more database URLs, comma-separated: split registrations over them (commit 16). Overrides `DATABASE_URL` |
 | `SECRET_KEY` | random (dev only) | **Required outside `APP_ENV=dev`, and the same on every replica** |
 | `APP_ENV` | `dev` | anything other than `dev` makes `SECRET_KEY` mandatory |
 | `OTP_DELIVERY` | `demo` | `demo` returns the OTP in the response (no SMS gateway); `log` only logs it |
@@ -59,7 +60,7 @@ TEST_REDIS_URL=redis://localhost:6379/15 pytest -v      # 42 tests
 
 **Stateless (Sec 9.4).** Nothing about a user is kept in process memory, so the
 load balancer can send any request to any replica, and the autoscaler can add or
-remove replicas at any time (commit 5). Following CoWIN's own API shape
+remove replicas at any time (commit 14). Following CoWIN's own API shape
 (generate OTP returns a `txnId`, confirm OTP returns a token):
 
 - the `txn_id` is a signed token holding the mobile number, an expiry, and an
@@ -117,3 +118,28 @@ Experiment **E4** measures all of this: [`experiments/e4_otp_flood/`](../experim
 
 The SMS step is simulated. The Sec 9.5 design puts it on SQS/SNS so sending never
 blocks a registration.
+
+## Several databases (commit 16)
+
+With `DATABASE_URLS` set to two or more databases (each with all migrations applied), the
+service splits registrations over them by mobile number (`ShardedDatabase` in `app/db.py`):
+
+- The mobile number is hashed to one of 64 slots; each slot belongs to one database. A mobile's
+  registration and beneficiaries all live on one database, so the 4-per-mobile limit and the
+  idempotency key are still checked inside one transaction.
+- A photo ID must be unique across every database. Before adding a beneficiary the service
+  claims the photo ID on the database its own slot points to (`claim_photo_id`, migration 005),
+  then adds the beneficiary on the mobile's database, and releases the claim if that fails. A
+  retry with the same `Idempotency-Key` finds its own claim and carries on.
+- If the service dies between the claim and the insert, the claim stays until the client
+  retries. A clean-up job that releases claims older than a few minutes with no matching
+  beneficiary would close that gap; it is not built here.
+- Moving load to a new database later means copying the rows of some slots and changing
+  `slot_map`, not re-hashing every mobile.
+
+```bash
+DATABASE_URLS=postgresql://cowin:cowin@localhost:5441/cowin,postgresql://cowin:cowin@localhost:5442/cowin \
+  python -m uvicorn app.main:app --port 8000
+```
+
+E6 (`experiments/e6_shard/`) measures one table vs partitions vs 2 and 4 databases.

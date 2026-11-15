@@ -32,7 +32,7 @@ from fastapi.staticfiles import StaticFiles
 
 from . import errors
 from .config import Settings
-from .db import Database
+from .db import Database, make_database
 from .errors import ApiError
 from .limits import Limits, LimitsUnavailable, client_id
 from .schemas import (BeneficiaryCreated, BeneficiaryIn, BeneficiaryList, OtpRequest,
@@ -50,7 +50,8 @@ def mask(mobile: str) -> str:
 
 def create_app(settings: Settings | None = None, database: Database | None = None) -> FastAPI:
     settings = settings or Settings()
-    db = database or Database(settings.database_url, settings.db_pool_min, settings.db_pool_max)
+    db = database or make_database(settings.database_urls, settings.database_url,
+                                   settings.db_pool_min, settings.db_pool_max)
     signer = Signer(settings.secret_key)
     limits = Limits(settings.redis_url, settings) if settings.redis_url else None
     enforce = bool(limits) and settings.rate_limit_enabled
@@ -111,7 +112,7 @@ def create_app(settings: Settings | None = None, database: Database | None = Non
             raise ApiError(401, "UNAUTHENTICATED", "Session is invalid or has expired. Log in again.",
                            {"WWW-Authenticate": "Bearer"})
 
-    # -- health (for Kubernetes probes, commit 5) ---------------------------
+    # -- health (for Kubernetes probes, commit 14) ---------------------------
     @app.get("/healthz", tags=["health"])
     def healthz():
         return {"status": "ok"}

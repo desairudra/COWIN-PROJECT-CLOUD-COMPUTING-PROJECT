@@ -1,0 +1,71 @@
+name: k8s
+
+on:
+  workflow_dispatch:
+  push:
+    paths: ["deploy/**", "experiments/k8s/**", "experiments/e1_hpa/**", "experiments/e2_self_heal/**",
+            "experiments/e3_rollout/**", "lookup/**", "service/**", "web/**", ".github/workflows/k8s.yml"]
+  pull_request:
+    paths: ["deploy/**", "experiments/k8s/**", "experiments/e1_hpa/**", "experiments/e2_self_heal/**",
+            "experiments/e3_rollout/**", "lookup/**", "service/**", "web/**", ".github/workflows/k8s.yml"]
+
+jobs:
+  checks:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install pytest kubernetes-validate
+      - run: pytest -v experiments/k8s/tests
+      - run: kubernetes-validate --strict deploy/k8s/lookup.yaml deploy/k8s/nginx.yaml
+
+  compose:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Whole site with docker compose
+        run: docker compose -f deploy/compose/docker-compose.yml up -d --build --wait
+      - name: Smoke test through nginx
+        run: |
+          set -x
+          curl -sf localhost:8090/nginx-health
+          curl -sf "localhost:8090/centers?city=Mumbai" | grep -q MUM-001
+          curl -sf localhost:8090/readyz | grep -q ready
+          curl -sf localhost:8090/ | grep -qi "<html"
+          r=$(curl -sf -X POST localhost:8090/api/v1/otp/request -H 'Content-Type: application/json' -d '{"mobile":"9876543210"}')
+          txn=$(echo "$r" | jq -r .txn_id); otp=$(echo "$r" | jq -r .demo_otp)
+          tok=$(curl -sf -X POST localhost:8090/api/v1/otp/verify -H 'Content-Type: application/json' \
+                -d "{\"txn_id\":\"$txn\",\"otp\":\"$otp\"}" | jq -r .token)
+          curl -sf -X POST localhost:8090/api/v1/beneficiaries -H "Authorization: Bearer $tok" -H 'Content-Type: application/json' \
+               -H 'Idempotency-Key: ci-1' -d '{"full_name":"CI Test","birth_year":1980,"gender":"MALE","photo_id_type":"PAN","photo_id_number":"CIPAN0001"}'
+          curl -sf localhost:8090/api/v1/beneficiaries -H "Authorization: Bearer $tok" | jq -e '.count == 1'
+      - if: failure()
+        run: docker compose -f deploy/compose/docker-compose.yml logs --tail 50
+      - if: always()
+        run: docker compose -f deploy/compose/docker-compose.yml down -v
+
+  kind:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: helm/kind-action@v1
+        with:
+          cluster_name: cowin
+          config: deploy/k8s/kind-cluster.yaml
+      - run: ./deploy/k8s/up.sh
+      - name: E3 rolling update under traffic
+        run: ./experiments/e3_rollout/run_e3.sh rolling
+      - name: E2 pods killed under traffic
+        run: ./experiments/e2_self_heal/run_e2.sh pods
+      - if: always()
+        run: kubectl -n cowin get pods,hpa -o wide
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: k8s-experiments
+          path: docs/evidence/14-*
